@@ -1,0 +1,7 @@
+// Realm grammar: start room, target size, allowed tag adjacencies.
+// Empty `allow` = everything connects to everything.
+(
+    start: "sanctum",
+    target_rooms: 15,
+    allow: [],
+)

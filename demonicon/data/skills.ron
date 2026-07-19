@@ -1,0 +1,62 @@
+// The eight verbs. Chosen for modifier surface, not theme coverage —
+// every one of these must anchor a tier-5 build with the right sigils.
+[
+    (
+        id: "hellbolt", name: "BOLT OF THE PYRE", desc: "HURL A BRAND OF HELLFIRE",
+        cd_ticks: 16,
+        dmg: [(Hellfire, 12.0)],
+        apply: [(status: "ignite", chance: 0.35, stacks: 2, magnitude: 0.3)],
+        kind: Projectile(speed: 22.0, radius: 0.28, count: 1, spread_deg: 0.0, pierce: 0, life_ticks: 80),
+    ),
+    (
+        id: "voidnova", name: "HOLLOWING", desc: "THE VOID BLOOMS OUTWARD",
+        cd_ticks: 55,
+        dmg: [(Void, 18.0)],
+        apply: [(status: "blight", chance: 0.5, stacks: 2, magnitude: 0.25)],
+        kind: Nova(radius: 4.5),
+    ),
+    (
+        id: "ritual", name: "RITE OF THE DRAWN CIRCLE", desc: "CONSECRATED GROUND: IT LOVES YOU, NOT THEM",
+        cd_ticks: 110,
+        dmg: [(Hex, 6.0)],
+        apply: [(status: "hexmark", chance: 0.3, stacks: 1, magnitude: 0.2)],
+        kind: Ground(radius: 3.5, duration_ticks: 300, tick_interval: 20, consecrate: true),
+    ),
+    (
+        id: "shades", name: "SUMMON INDEX-SHADES", desc: "THREE CLERKS OF THE ARCHIVE, ARMED",
+        cd_ticks: 220,
+        dmg: [(Physical, 8.0)],
+        kind: Minion(count: 3, life_ticks: 900, attack_cd: 40, speed: 7.0),
+    ),
+    (
+        id: "hexbeam", name: "SENTENCE OF UNMAKING", desc: "CHANNEL A LINE OF HEX",
+        cd_ticks: 25,
+        dmg: [(Hex, 7.0)],
+        apply: [(status: "hexmark", chance: 0.25, stacks: 1, magnitude: 0.3)],
+        kind: Beam(range: 12.0, width: 1.2, tick_interval: 12),
+    ),
+    (
+        id: "ripdash", name: "RIP THROUGH", desc: "BECOME BRIEFLY A WOUND IN THE AIR",
+        cd_ticks: 80,
+        dmg: [(Physical, 14.0)],
+        apply: [(status: "petrify", chance: 0.2, stacks: 1, magnitude: 0.0)],
+        kind: Dash(dist: 7.0),
+    ),
+    (
+        id: "unravel", name: "CURSE OF UNRAVELLING", desc: "MARK THEM. LET THEM TURN.",
+        cd_ticks: 95,
+        dmg: [(Hex, 4.0)],
+        apply: [
+            (status: "hexmark", chance: 1.0, stacks: 2, magnitude: 0.5),
+            (status: "discord", chance: 0.6, stacks: 2, magnitude: 0.4),
+        ],
+        kind: Curse(radius: 4.0),
+    ),
+    (
+        id: "idol", name: "OBSIDIAN IDOL", desc: "PLANT A GOD THAT SPITS FIRE",
+        cd_ticks: 170,
+        dmg: [(Hellfire, 9.0)],
+        apply: [(status: "ignite", chance: 0.25, stacks: 1, magnitude: 0.25)],
+        kind: Totem(duration_ticks: 600, fire_cd: 28, proj_speed: 18.0),
+    ),
+]

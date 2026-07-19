@@ -1,0 +1,12 @@
+// The six statuses. Engine machinery, game meaning. All interact:
+// ignite spreads on death · hexmark amplifies the next non-physical hit ·
+// discord retargets enemies at each other · blight detonates at cap ·
+// petrify shatters under physical · consecrate flips heal/harm on the ground.
+[
+    (name: "ignite",     max_stacks: 10, duration_ticks: 240, tick_interval: 30, refresh_on_apply: true),
+    (name: "hexmark",    max_stacks: 5,  duration_ticks: 480, tick_interval: 0,  refresh_on_apply: true),
+    (name: "discord",    max_stacks: 5,  duration_ticks: 360, tick_interval: 0,  refresh_on_apply: true),
+    (name: "blight",     max_stacks: 8,  duration_ticks: 300, tick_interval: 25, refresh_on_apply: true),
+    (name: "petrify",    max_stacks: 1,  duration_ticks: 60,  tick_interval: 0,  refresh_on_apply: false),
+    (name: "consecrate", max_stacks: 1,  duration_ticks: 120, tick_interval: 30, refresh_on_apply: true),
+]

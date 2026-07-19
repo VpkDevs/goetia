@@ -1,0 +1,62 @@
+// Six dummy room templates for the realm test. Sizes in layout cells
+// (1 cell = 4 world units in the sandbox). Doors sit on wall edges at
+// `offset` cells from the wall's min corner. Edit while the realm scene is
+// running — hot reload regenerates the layout.
+[
+    (
+        name: "sanctum",
+        width: 5, height: 5,
+        doors: [
+            (side: North, offset: 2),
+            (side: South, offset: 2),
+            (side: East, offset: 2),
+            (side: West, offset: 2),
+        ],
+        tags: ["hub"],
+        weight: 0.5,
+    ),
+    (
+        name: "hall_ns",
+        width: 2, height: 6,
+        doors: [(side: North, offset: 0), (side: South, offset: 0)],
+        tags: ["hall"],
+        weight: 2.0,
+    ),
+    (
+        name: "hall_ew",
+        width: 6, height: 2,
+        doors: [(side: East, offset: 0), (side: West, offset: 0)],
+        tags: ["hall"],
+        weight: 2.0,
+    ),
+    (
+        name: "crypt",
+        width: 4, height: 3,
+        doors: [
+            (side: West, offset: 1),
+            (side: East, offset: 1),
+            (side: North, offset: 1),
+        ],
+        tags: ["room"],
+        weight: 1.5,
+    ),
+    (
+        name: "cell",
+        width: 2, height: 2,
+        doors: [(side: South, offset: 0), (side: West, offset: 1)],
+        tags: ["room"],
+        weight: 1.0,
+    ),
+    (
+        name: "gallery",
+        width: 7, height: 4,
+        doors: [
+            (side: West, offset: 2),
+            (side: East, offset: 2),
+            (side: South, offset: 3),
+            (side: North, offset: 1),
+        ],
+        tags: ["room"],
+        weight: 1.0,
+    ),
+]

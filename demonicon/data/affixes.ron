@@ -1,0 +1,104 @@
+// ~60 affixes: the numeric spine plus ~15 behavioral. Percentages are
+// fractions (0.2 = +20%). `#%` in a name renders the rolled value as a
+// percent; `#` renders it flat. hidden_pool affixes arrive veiled on
+// Rares/Goetics; curses only ever arrive veiled (Vassago's little joke).
+[
+    // ---------------- numeric spine: damage
+    (id: "dmg_g1",  name: "#% GLOBAL DAMAGE",      slots: [Weapon, Ring],  stat: Some("dmg_global"),   op: Some(Add), lo: 0.10, hi: 0.25, weight: 10.0),
+    (id: "dmg_g2",  name: "#% GLOBAL DAMAGE",      slots: [Weapon],        stat: Some("dmg_global"),   op: Some(Add), lo: 0.25, hi: 0.45, weight: 4.0),
+    (id: "dmg_p1",  name: "#% PHYSICAL DAMAGE",    slots: [Weapon, Ring],  stat: Some("dmg_phys"),     op: Some(Add), lo: 0.15, hi: 0.40, weight: 8.0),
+    (id: "dmg_f1",  name: "#% HELLFIRE DAMAGE",    slots: [Weapon, Ring],  stat: Some("dmg_hellfire"), op: Some(Add), lo: 0.15, hi: 0.40, weight: 8.0),
+    (id: "dmg_h1",  name: "#% HEX DAMAGE",         slots: [Weapon, Ring],  stat: Some("dmg_hex"),      op: Some(Add), lo: 0.15, hi: 0.40, weight: 8.0),
+    (id: "dmg_v1",  name: "#% VOID DAMAGE",        slots: [Weapon, Ring],  stat: Some("dmg_void"),     op: Some(Add), lo: 0.15, hi: 0.40, weight: 8.0),
+    (id: "minion1", name: "#% MINION DAMAGE",      slots: [Weapon, Relic], stat: Some("minion_dmg"),   op: Some(Add), lo: 0.20, hi: 0.50, weight: 6.0),
+
+    // ---------------- crit
+    (id: "crit1",   name: "#% CRIT CHANCE",        slots: [Weapon, Ring],  stat: Some("crit_chance"),  op: Some(Add), lo: 0.04, hi: 0.10, weight: 8.0),
+    (id: "crit2",   name: "#% CRIT CHANCE",        slots: [Weapon],        stat: Some("crit_chance"),  op: Some(Add), lo: 0.10, hi: 0.18, weight: 3.0),
+    (id: "critm1",  name: "#% CRIT DAMAGE",        slots: [Weapon, Ring],  stat: Some("crit_mult"),    op: Some(Add), lo: 0.20, hi: 0.60, weight: 7.0),
+
+    // ---------------- speed
+    (id: "cast1",   name: "#% CAST SPEED",         slots: [Weapon, Relic], stat: Some("cast_speed"),   op: Some(Add), lo: 0.08, hi: 0.20, weight: 8.0),
+    (id: "cast2",   name: "#% CAST SPEED",         slots: [Weapon],        stat: Some("cast_speed"),   op: Some(Add), lo: 0.20, hi: 0.35, weight: 3.0),
+    (id: "move1",   name: "#% MOVE SPEED",         slots: [Armor, Ring],   stat: Some("move_speed"),   op: Some(Add), lo: 0.06, hi: 0.15, weight: 8.0),
+    (id: "projspd", name: "#% PROJECTILE SPEED",   slots: [Weapon, Ring],  stat: Some("proj_speed"),   op: Some(Add), lo: 0.15, hi: 0.40, weight: 6.0),
+
+    // ---------------- life & defense
+    (id: "hp1",     name: "+# MAXIMUM LIFE",       slots: [Armor, Relic, Ring], stat: Some("max_hp"), op: Some(Add), lo: 20.0, hi: 55.0, weight: 10.0),
+    (id: "hp2",     name: "+# MAXIMUM LIFE",       slots: [Armor],         stat: Some("max_hp"),       op: Some(Add), lo: 55.0, hi: 110.0, weight: 4.0),
+    (id: "hpmul1",  name: "#% MAXIMUM LIFE",       slots: [Armor],         stat: Some("max_hp"),       op: Some(Mul), lo: 0.08, hi: 0.18, weight: 4.0),
+    (id: "regen1",  name: "+# LIFE PER SECOND",    slots: [Armor, Relic],  stat: Some("hp_regen"),     op: Some(Add), lo: 2.0, hi: 6.0, weight: 8.0),
+    (id: "armor1",  name: "#% PHYSICAL RESIST",    slots: [Armor],         stat: Some("armor"),        op: Some(Add), lo: 0.08, hi: 0.20, weight: 8.0),
+    (id: "resist1", name: "#% ELEMENTAL RESIST",   slots: [Armor, Relic],  stat: Some("resist"),       op: Some(Add), lo: 0.08, hi: 0.20, weight: 8.0),
+
+    // ---------------- status & area
+    (id: "status1", name: "#% STATUS CHANCE",      slots: [Weapon, Relic], stat: Some("status_chance"), op: Some(Add), lo: 0.15, hi: 0.40, weight: 8.0),
+    (id: "status2", name: "#% STATUS CHANCE",      slots: [Relic],         stat: Some("status_chance"), op: Some(Add), lo: 0.40, hi: 0.70, weight: 3.0),
+    (id: "aoe1",    name: "#% AREA",               slots: [Weapon, Relic], stat: Some("aoe"),           op: Some(Add), lo: 0.10, hi: 0.30, weight: 7.0),
+
+    // ---------------- loot
+    (id: "quant1",  name: "#% LOOT QUANTITY",      slots: [Ring, Relic],   stat: Some("loot_quant"),   op: Some(Add), lo: 0.10, hi: 0.30, weight: 6.0),
+    (id: "rare1",   name: "#% LOOT RARITY",        slots: [Ring, Relic],   stat: Some("loot_rare"),    op: Some(Add), lo: 0.10, hi: 0.35, weight: 5.0),
+
+    // ---------------- behavioral (~15): the affixes people screenshot
+    (id: "b_spread",   name: "YOUR IGNITES SPREAD TWICE",             slots: [Weapon, Relic], weight: 2.0,
+     reaction: Some((on: "on_kill", action: SpreadStatus(status: "ignite", radius: 5.0)))),
+    (id: "b_fifth",    name: "EVERY 5TH CAST REFUNDS ITS COOLDOWN",   slots: [Weapon, Relic], weight: 2.0,
+     reaction: Some((on: "nth_cast", action: FreeReset))),
+    (id: "b_fifthecho",name: "EVERY 5TH CAST ECHOES AT FULL POWER",   slots: [Weapon], weight: 1.5,
+     reaction: Some((on: "nth_cast", action: Echo(pct: 1.0)))),
+    (id: "b_critfire", name: "CRITS APPLY 2 IGNITE",                  slots: [Weapon, Ring], weight: 2.5,
+     reaction: Some((on: "on_crit", action: ApplyStatus(status: "ignite", stacks: 2, magnitude: 0.5, radius: 0.0)))),
+    (id: "b_killnova", name: "KILLS DETONATE IN HELLFIRE",            slots: [Weapon, Armor], weight: 2.5,
+     reaction: Some((on: "on_kill", action: Nova(pct: 0.8, dtype: Hellfire, radius: 3.5)))),
+    (id: "b_dodgehex", name: "DODGING HEX-MARKS EVERYTHING NEAR YOU", slots: [Armor, Ring], weight: 2.0,
+     reaction: Some((on: "on_dodge", action: ApplyStatus(status: "hexmark", stacks: 2, magnitude: 0.3, radius: 4.0)))),
+    (id: "b_lootfren", name: "PICKING UP LOOT SENDS YOU FRENZIED",    slots: [Armor, Ring], weight: 2.0,
+     reaction: Some((on: "on_loot_pickup", action: Frenzy(ticks: 240, cast_speed: 0.4, move_speed: 0.25)))),
+    (id: "b_lastgasp", name: "ON LOW LIFE: HEAL 25%",                 slots: [Armor, Relic], weight: 2.0,
+     reaction: Some((on: "on_low_life", action: Heal(pct_max: 0.25)))),
+    (id: "b_detnova",  name: "STATUS DETONATIONS ECHO IN HEX",        slots: [Relic, Ring], weight: 2.0,
+     reaction: Some((on: "on_status_detonate", action: Nova(pct: 1.2, dtype: Hex, radius: 4.0)))),
+    (id: "b_popblight",name: "15%: APPLYING A STATUS DETONATES BLIGHT", slots: [Relic], weight: 1.5,
+     reaction: Some((on: "on_status_apply", chance: 0.15, action: Detonate(status: "blight")))),
+    (id: "b_killdust", name: "KILLS GRIND TO DUST",                   slots: [Ring], weight: 2.5,
+     reaction: Some((on: "on_kill", action: Dust(amount: 1)))),
+    (id: "b_critreset",name: "25%: CRITS REFUND COOLDOWN",            slots: [Weapon, Ring], weight: 1.5,
+     reaction: Some((on: "on_crit", chance: 0.25, action: FreeReset))),
+    (id: "b_dodgefren",name: "DODGING SENDS YOU FRENZIED",            slots: [Armor], weight: 2.0,
+     reaction: Some((on: "on_dodge", action: Frenzy(ticks: 180, cast_speed: 0.3, move_speed: 0.2)))),
+    (id: "b_fifthvoid",name: "EVERY 5TH CAST: VOID NOVA",             slots: [Relic], weight: 1.5,
+     reaction: Some((on: "nth_cast", action: Nova(pct: 1.5, dtype: Void, radius: 5.0)))),
+    (id: "b_applyecho",name: "10%: APPLYING A STATUS ECHOES YOUR CAST", slots: [Relic, Ring], weight: 1.2,
+     reaction: Some((on: "on_status_apply", chance: 0.10, action: Echo(pct: 0.35)))),
+
+    // ---------------- second tier of the spine
+    (id: "regen2",  name: "+# LIFE PER SECOND",    slots: [Relic],         stat: Some("hp_regen"),     op: Some(Add), lo: 6.0, hi: 12.0, weight: 3.0),
+    (id: "aoe2",    name: "#% AREA",               slots: [Relic],         stat: Some("aoe"),          op: Some(Add), lo: 0.30, hi: 0.50, weight: 3.0),
+    (id: "move2",   name: "#% MOVE SPEED",         slots: [Armor],         stat: Some("move_speed"),   op: Some(Add), lo: 0.15, hi: 0.25, weight: 3.0),
+    (id: "minion2", name: "#% MINION DAMAGE",      slots: [Relic],         stat: Some("minion_dmg"),   op: Some(Add), lo: 0.50, hi: 0.90, weight: 2.5),
+    (id: "quant2",  name: "#% LOOT QUANTITY",      slots: [Relic],         stat: Some("loot_quant"),   op: Some(Add), lo: 0.30, hi: 0.55, weight: 2.5),
+    (id: "critm2",  name: "#% CRIT DAMAGE",        slots: [Weapon],        stat: Some("crit_mult"),    op: Some(Add), lo: 0.60, hi: 1.00, weight: 2.5),
+    (id: "dmg_g3",  name: "#% GLOBAL DAMAGE",      slots: [Relic],         stat: Some("dmg_global"),   op: Some(Add), lo: 0.20, hi: 0.35, weight: 4.0),
+
+    // ---------------- hidden pool (Vassago): boons arrive veiled
+    (id: "h_dmg",    name: "#% GLOBAL DAMAGE",     slots: [Weapon, Armor, Relic, Ring], stat: Some("dmg_global"), op: Some(Add), lo: 0.30, hi: 0.60, weight: 4.0, hidden_pool: true),
+    (id: "h_crit",   name: "#% CRIT CHANCE",       slots: [Weapon, Ring], stat: Some("crit_chance"), op: Some(Add), lo: 0.12, hi: 0.22, weight: 3.0, hidden_pool: true),
+    (id: "h_speed",  name: "#% CAST SPEED",        slots: [Weapon, Relic], stat: Some("cast_speed"), op: Some(Add), lo: 0.25, hi: 0.45, weight: 3.0, hidden_pool: true),
+    (id: "h_loot",   name: "#% LOOT RARITY",       slots: [Ring, Relic],  stat: Some("loot_rare"),  op: Some(Add), lo: 0.35, hi: 0.70, weight: 3.0, hidden_pool: true),
+    (id: "h_voidk",  name: "KILLS DETONATE IN VOID", slots: [Weapon, Armor, Relic, Ring], weight: 2.0, hidden_pool: true,
+     reaction: Some((on: "on_kill", action: Nova(pct: 1.0, dtype: Void, radius: 4.0)))),
+
+    // ---------------- hidden curses: the ledger has two columns
+    (id: "c_slow",   name: "CURSE: #% MOVE SPEED", slots: [Armor, Ring],  stat: Some("move_speed"), op: Some(Add), lo: -0.18, hi: -0.08, weight: 3.0, hidden_pool: true, curse: true),
+    (id: "c_frail",  name: "CURSE: #% MAXIMUM LIFE", slots: [Armor, Relic], stat: Some("max_hp"),   op: Some(Mul), lo: -0.20, hi: -0.10, weight: 3.0, hidden_pool: true, curse: true),
+    (id: "c_dull",   name: "CURSE: #% GLOBAL DAMAGE", slots: [Weapon],    stat: Some("dmg_global"), op: Some(Add), lo: -0.20, hi: -0.10, weight: 3.0, hidden_pool: true, curse: true),
+    (id: "c_naked",  name: "CURSE: #% ELEMENTAL RESIST", slots: [Armor],  stat: Some("resist"),     op: Some(Add), lo: -0.25, hi: -0.12, weight: 3.0, hidden_pool: true, curse: true),
+
+    // ---------------- corrupt-only: the altar's handwriting
+    (id: "k_power",  name: "CORRUPT: #% GLOBAL DAMAGE",   slots: [Weapon, Armor, Relic, Ring], stat: Some("dmg_global"), op: Some(Add), lo: 0.35, hi: 0.65, weight: 5.0, corrupt_only: true),
+    (id: "k_glass",  name: "CORRUPT: #% MAX LIFE",        slots: [Weapon, Ring], stat: Some("max_hp"), op: Some(Mul), lo: -0.15, hi: -0.05, weight: 4.0, corrupt_only: true),
+    (id: "k_allres", name: "CORRUPT: #% ALL RESIST",      slots: [Armor, Relic], stat: Some("resist"), op: Some(Add), lo: 0.20, hi: 0.35, weight: 4.0, corrupt_only: true),
+    (id: "k_frenzy", name: "CORRUPT: KILLS SEND YOU FRENZIED", slots: [Weapon, Armor, Relic, Ring], weight: 3.0, corrupt_only: true,
+     reaction: Some((on: "on_kill", chance: 0.5, action: Frenzy(ticks: 150, cast_speed: 0.35, move_speed: 0.2)))),
+]

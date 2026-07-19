@@ -1,0 +1,16 @@
+// The three seated demons. boss_hp is a percentage multiplier applied to the
+// boss's base hp (400 = 4x).
+[
+    (demon: Vassago, name: "THE UNNUMBERED ARCHIVE",
+     rooms_file: "realms/vassago_rooms.ron", grammar_file: "realms/vassago_grammar.ron",
+     enemies: ["index_wraith", "ledger_golem", "card_swarm", "vault_sentinel"],
+     boss: "boss_vassago", boss_hp: 400.0, ambient: 0.45),
+    (demon: Andras, name: "THE BROKEN CATHEDRAL",
+     rooms_file: "realms/andras_rooms.ron", grammar_file: "realms/andras_grammar.ron",
+     enemies: ["schism_knight", "frenzy_hound", "discord_herald"],
+     boss: "boss_andras", boss_hp: 420.0, ambient: 1.0),
+    (demon: Buer, name: "THE RING-GARDENS",
+     rooms_file: "realms/buer_rooms.ron", grammar_file: "realms/buer_grammar.ron",
+     enemies: ["blight_clergy", "spore_wheel", "bloom_tender"],
+     boss: "boss_buer", boss_hp: 400.0, ambient: 1.1),
+]

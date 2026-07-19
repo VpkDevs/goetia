@@ -1,0 +1,17 @@
+// Rings around a hub: gardens blighted and blooming at once.
+[
+    (name: "hub_dais", width: 5, height: 5, tags: ["hub"], weight: 0.8,
+     doors: [(side: North, offset: 2), (side: South, offset: 2), (side: East, offset: 2), (side: West, offset: 2)]),
+    (name: "ring_garden", width: 6, height: 6, tags: ["room"], weight: 1.8,
+     doors: [(side: North, offset: 2), (side: South, offset: 3), (side: East, offset: 2), (side: West, offset: 3)]),
+    (name: "stem_ns", width: 2, height: 4, tags: ["hall"], weight: 2.2,
+     doors: [(side: North, offset: 0), (side: South, offset: 1)]),
+    (name: "stem_ew", width: 4, height: 2, tags: ["hall"], weight: 2.2,
+     doors: [(side: East, offset: 0), (side: West, offset: 1)]),
+    (name: "petal", width: 3, height: 3, tags: ["room"], weight: 1.2,
+     doors: [(side: South, offset: 1)]),
+    (name: "arbor", width: 4, height: 6, tags: ["room"], weight: 1.3,
+     doors: [(side: West, offset: 2), (side: East, offset: 3), (side: South, offset: 1)]),
+    (name: "bloom_court", width: 7, height: 5, tags: ["arena"], weight: 1.2,
+     doors: [(side: West, offset: 2), (side: North, offset: 3), (side: East, offset: 2)]),
+]

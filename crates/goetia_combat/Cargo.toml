@@ -1,0 +1,10 @@
+[package]
+name = "goetia_combat"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+goetia_core = { workspace = true }
+glam = { workspace = true }
+serde = { workspace = true }

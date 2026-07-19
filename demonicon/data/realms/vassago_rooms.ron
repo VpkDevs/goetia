@@ -1,0 +1,17 @@
+// Branching archive spirals with vault dead-ends.
+[
+    (name: "rotunda", width: 5, height: 5, tags: ["hub"], weight: 0.8,
+     doors: [(side: North, offset: 2), (side: South, offset: 2), (side: East, offset: 2), (side: West, offset: 2)]),
+    (name: "stack_ns", width: 2, height: 6, tags: ["hall"], weight: 2.2,
+     doors: [(side: North, offset: 0), (side: South, offset: 1)]),
+    (name: "stack_ew", width: 6, height: 2, tags: ["hall"], weight: 2.2,
+     doors: [(side: East, offset: 0), (side: West, offset: 1)]),
+    (name: "gallery", width: 7, height: 4, tags: ["room"], weight: 1.4,
+     doors: [(side: West, offset: 2), (side: East, offset: 1), (side: North, offset: 3)]),
+    (name: "vault", width: 3, height: 3, tags: ["vault"], weight: 1.0,
+     doors: [(side: South, offset: 1)]),
+    (name: "junction", width: 3, height: 3, tags: ["hall"], weight: 1.6,
+     doors: [(side: North, offset: 1), (side: South, offset: 1), (side: East, offset: 1), (side: West, offset: 1)]),
+    (name: "spiral_wing", width: 4, height: 4, tags: ["room"], weight: 1.4,
+     doors: [(side: West, offset: 1), (side: North, offset: 2), (side: East, offset: 3)]),
+]

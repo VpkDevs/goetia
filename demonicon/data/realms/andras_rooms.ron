@@ -1,0 +1,17 @@
+// Broken arteries funneling into collapse arenas.
+[
+    (name: "nave", width: 4, height: 8, tags: ["hub"], weight: 0.8,
+     doors: [(side: North, offset: 1), (side: South, offset: 2), (side: East, offset: 4), (side: West, offset: 3)]),
+    (name: "artery_ns", width: 2, height: 5, tags: ["hall"], weight: 2.4,
+     doors: [(side: North, offset: 0), (side: South, offset: 1)]),
+    (name: "artery_ew", width: 5, height: 2, tags: ["hall"], weight: 2.4,
+     doors: [(side: East, offset: 0), (side: West, offset: 1)]),
+    (name: "collapse_arena", width: 7, height: 7, tags: ["arena"], weight: 1.6,
+     doors: [(side: North, offset: 3), (side: South, offset: 3), (side: East, offset: 3), (side: West, offset: 3)]),
+    (name: "breach", width: 3, height: 3, tags: ["room"], weight: 1.0,
+     doors: [(side: West, offset: 1)]),
+    (name: "transept", width: 8, height: 3, tags: ["room"], weight: 1.2,
+     doors: [(side: West, offset: 1), (side: East, offset: 1), (side: North, offset: 4)]),
+    (name: "pulpit", width: 4, height: 4, tags: ["room"], weight: 1.0,
+     doors: [(side: South, offset: 1), (side: East, offset: 2)]),
+]

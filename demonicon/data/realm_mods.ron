@@ -1,0 +1,18 @@
+// Shared realm-modifier pool (tier 2+ rolls 2-4). Every one scales danger
+// AND loot — risk is a dial the player owns.
+[
+    (id: "swift_doom",   text: "THE DEAD RUN QUICK (+35% ENEMY SPEED, +35% LOOT)",
+     speed_mul: 1.35, loot_mul: 1.35),
+    (id: "iron_hosts",   text: "IRON HOSTS (+50% ENEMY LIFE, +40% LOOT)",
+     hp_mul: 1.5, loot_mul: 1.4),
+    (id: "discord_seed", text: "ALL ENEMIES SPAWN WITH 1 DISCORD (+30% LOOT)",
+     spawn_discord: 1, loot_mul: 1.3),
+    (id: "unveiled",     text: "HIDDEN AFFIXES DROP REVEALED - BUT SHRINES ARE HOSTILE (+25% LOOT)",
+     reveal_hidden: true, hostile_shrines: true, loot_mul: 1.25),
+    (id: "brittle_world",text: "BRITTLE WORLD (+40% ENEMY DAMAGE, +45% LOOT)",
+     dmg_mul: 1.4, loot_mul: 1.45),
+    (id: "fast_cycle",   text: "THE WHEEL SPINS DOUBLE (+20% LOOT)",
+     cycle_rate_mul: 2.0, loot_mul: 1.2),
+    (id: "volatile_dead",text: "THE DEAD DETONATE (+50% LOOT)",
+     death_novas: true, loot_mul: 1.5),
+]

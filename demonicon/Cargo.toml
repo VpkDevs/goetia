@@ -1,0 +1,20 @@
+[package]
+name = "demonicon"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+goetia = { workspace = true }
+glam = { workspace = true }
+serde = { workspace = true }
+ron = { workspace = true }
+log = { workspace = true }
+
+[lib]
+name = "demonicon"
+path = "src/lib.rs"
+
+[[bin]]
+name = "demonicon"
+path = "src/main.rs"

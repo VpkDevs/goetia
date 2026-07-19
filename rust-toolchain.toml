@@ -1,0 +1,4 @@
+# This machine has no MSVC Build Tools; the rustup GNU toolchain links
+# self-contained. Remove this file if you have link.exe and prefer MSVC.
+[toolchain]
+channel = "stable-x86_64-pc-windows-gnu"

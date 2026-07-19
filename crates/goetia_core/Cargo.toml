@@ -1,0 +1,10 @@
+[package]
+name = "goetia_core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+serde = { workspace = true }
+crossbeam-deque = "0.8"
+log = { workspace = true }

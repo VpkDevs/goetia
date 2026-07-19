@@ -1,0 +1,75 @@
+// Nine contracts, three per demon. Build-defining pacts with real drawbacks.
+// Max three active. These are the Exodia enablers — the drawbacks are priced
+// for Pillar 1: fun outranks balance.
+[
+    // ------------------------------------------------- VASSAGO
+    (
+        id: "appraisal", demon: Vassago, name: "CONTRACT OF APPRAISAL",
+        text: "ALL ITEMS ARRIVE APPRAISED. HIS FEE: A FIFTH OF YOUR BLOOD.",
+        mods: [
+            (stat: "loot_rare", op: Add, value: 0.30),
+            (stat: "max_hp", op: Mul, value: -0.20),
+        ],
+        rules: [AppraiseOnPickup],
+    ),
+    (
+        id: "veiled_pact", demon: Vassago, name: "CONTRACT OF THE VEIL",
+        text: "ALL HIDDEN AFFIXES ACTIVE - INCLUDING HIDDEN CURSES.",
+        mods: [(stat: "resist", op: Add, value: -0.15)],
+        rules: [AllHiddenActive],
+    ),
+    (
+        id: "index_tax", demon: Vassago, name: "CONTRACT OF THE INDEX",
+        text: "TWICE THE FINDINGS. HE TAKES HIS CUT FROM YOUR STRIKES.",
+        mods: [
+            (stat: "loot_quant", op: Add, value: 0.60),
+            (stat: "dmg_global", op: Add, value: -0.15),
+        ],
+    ),
+
+    // ------------------------------------------------- ANDRAS
+    (
+        id: "discord_pact", demon: Andras, name: "CONTRACT OF DISCORD",
+        text: "YOU CAN BE DISCORDED. WHILE DISCORDED +80% DAMAGE - AND YOUR PROCS MAY TARGET YOU.",
+        rules: [PlayerDiscordable(power: 0.8), ProcsTargetSelf],
+    ),
+    (
+        id: "schism", demon: Andras, name: "CONTRACT OF SCHISM",
+        text: "YOUR CRITS SOW DISCORD. YOUR SKIN GROWS THIN.",
+        mods: [
+            (stat: "crit_chance", op: Add, value: 0.10),
+            (stat: "armor", op: Add, value: -0.15),
+        ],
+        reactions: [
+            (on: "on_crit", action: ApplyStatus(status: "discord", stacks: 1, magnitude: 0.3, radius: 0.0)),
+        ],
+    ),
+    (
+        id: "warfeast", demon: Andras, name: "CONTRACT OF THE WAR-FEAST",
+        text: "EVERY KILL FEEDS YOU. NOTHING ELSE DOES.",
+        mods: [(stat: "hp_regen", op: Mul, value: -1.0)],
+        reactions: [(on: "on_kill", action: Heal(pct_max: 0.02))],
+    ),
+
+    // ------------------------------------------------- BUER
+    (
+        id: "blight_communion", demon: Buer, name: "CONTRACT OF BLIGHT-COMMUNION",
+        text: "LOCKED TO THE BLIGHT PHASE. THE BLIGHT HEALS YOU.",
+        rules: [LockBlight, BlightHealsYou],
+    ),
+    (
+        id: "wheel_rider", demon: Buer, name: "CONTRACT OF THE WHEEL-RIDER",
+        text: "SPIN FASTER. THE WHEEL GRINDS A FIFTH OF YOU AWAY.",
+        mods: [
+            (stat: "cast_speed", op: Add, value: 0.25),
+            (stat: "move_speed", op: Add, value: 0.15),
+            (stat: "max_hp", op: Mul, value: -0.20),
+        ],
+    ),
+    (
+        id: "gardener", demon: Buer, name: "CONTRACT OF THE GARDENER",
+        text: "EVERY SICKNESS YOU PLANT WATERS YOU. YOUR OWN HAND WEAKENS.",
+        mods: [(stat: "dmg_global", op: Add, value: -0.10)],
+        reactions: [(on: "on_status_apply", action: Heal(pct_max: 0.01))],
+    ),
+]

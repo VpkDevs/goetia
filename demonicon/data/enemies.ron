@@ -1,0 +1,44 @@
+// Enemy families: three per realm plus bosses. Silhouette + motion + damage
+// type ARE the design — no rigs exist, shapes and shaders carry identity.
+[
+    // ------------------------------------------------- VASSAGO: the archive
+    (id: "index_wraith", name: "INDEX-WRAITH", hp: 26.0, dmg: 5.0, dmg_type: Hex,
+     speed: 7.5, radius: 0.45, scale: 1.0, shape: Spike, ai: Melee, weight: 10.0),
+    (id: "ledger_golem", name: "LEDGER GOLEM", hp: 90.0, dmg: 13.0, dmg_type: Physical,
+     speed: 3.2, radius: 0.8, scale: 1.7, shape: Golem, ai: Charger, weight: 4.0),
+    (id: "card_swarm", name: "CARD SWARM", hp: 18.0, dmg: 4.5, dmg_type: Hex,
+     speed: 5.0, radius: 0.4, scale: 0.8, shape: Orb,
+     ai: Ranged(range: 9.0, proj_speed: 10.0), weight: 7.0),
+    (id: "vault_sentinel", name: "VAULT SENTINEL", hp: 160.0, dmg: 16.0, dmg_type: Void,
+     speed: 2.6, radius: 1.0, scale: 2.1, shape: Golem, ai: Melee, weight: 1.5),
+    (id: "boss_vassago", name: "VASSAGO, FINDER OF HIDDEN THINGS", hp: 320.0, dmg: 18.0,
+     dmg_type: Hex, speed: 3.4, radius: 1.3, scale: 3.0, shape: Orb, ai: Melee, weight: 0.0),
+
+    // ------------------------------------------------- ANDRAS: the schism
+    (id: "schism_knight", name: "SCHISM KNIGHT", hp: 55.0, dmg: 8.0, dmg_type: Physical,
+     speed: 4.6, radius: 0.6, scale: 1.3, shape: Spike, ai: Melee, weight: 8.0,
+     apart_bonus: 2.0),
+    (id: "frenzy_hound", name: "FRENZY HOUND", hp: 22.0, dmg: 5.5, dmg_type: Physical,
+     speed: 8.5, radius: 0.45, scale: 0.9, shape: Spike, ai: Charger, weight: 10.0),
+    (id: "discord_herald", name: "DISCORD HERALD", hp: 40.0, dmg: 7.0, dmg_type: Hex,
+     speed: 4.2, radius: 0.55, scale: 1.2, shape: Column,
+     ai: Ranged(range: 10.0, proj_speed: 9.0), weight: 5.0,
+     inflict: Some((status: "discord", chance: 0.5, stacks: 1, magnitude: 0.2))),
+    (id: "boss_andras", name: "ANDRAS, SOWER OF DISCORD", hp: 340.0, dmg: 20.0,
+     dmg_type: Physical, speed: 4.4, radius: 1.2, scale: 2.8, shape: Spike, ai: Melee, weight: 0.0),
+
+    // ------------------------------------------------- BUER: the wheel-garden
+    (id: "blight_clergy", name: "BLIGHT-CLERGY", hp: 45.0, dmg: 7.0, dmg_type: Void,
+     speed: 3.8, radius: 0.55, scale: 1.25, shape: Column,
+     ai: Ranged(range: 9.5, proj_speed: 8.0), weight: 8.0, regen: 4.0,
+     inflict: Some((status: "blight", chance: 0.4, stacks: 1, magnitude: 0.3))),
+    (id: "spore_wheel", name: "SPORE WHEEL", hp: 70.0, dmg: 10.0, dmg_type: Void,
+     speed: 6.0, radius: 0.8, scale: 1.6, shape: Wheel,
+     ai: Wheel(orbit_radius: 5.0), weight: 6.0),
+    (id: "bloom_tender", name: "BLOOM TENDER", hp: 38.0, dmg: 4.0, dmg_type: Hex,
+     speed: 4.0, radius: 0.5, scale: 1.1, shape: Column,
+     ai: Support(heal: 10.0), weight: 4.0),
+    (id: "boss_buer", name: "BUER, THE HEALER-WHEEL", hp: 380.0, dmg: 17.0,
+     dmg_type: Void, speed: 5.2, radius: 1.5, scale: 3.2, shape: Wheel,
+     ai: Wheel(orbit_radius: 7.0), weight: 0.0, regen: 2.0),
+]

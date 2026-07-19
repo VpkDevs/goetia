@@ -1,0 +1,11 @@
+[package]
+name = "goetia_data"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+goetia_core = { workspace = true }
+serde = { workspace = true }
+ron = { workspace = true }
+log = { workspace = true }

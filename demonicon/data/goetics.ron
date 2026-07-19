@@ -1,0 +1,75 @@
+// Twelve hand-designed Goetics. Roughly: half rule-changers, a quarter pure
+// outrageous power, some build-around curiosities, one deliberately weird.
+[
+    // ---- deliberately weird (~10%)
+    (
+        id: "second_sorrow", name: "SECOND SORROW OF THE LEDGER", slot: Relic,
+        lore: "ALL DAMAGE DEALT TWICE, ONE SECOND APART. GRIEF KEEPS BOOKS.",
+        rules: [DoubleDamageDelayed],
+    ),
+    // ---- rule-changers (~50%)
+    (
+        id: "crown_fires", name: "CROWN OF ALL FIRES", slot: Armor,
+        lore: "THERE WAS NEVER ANY OTHER ELEMENT.",
+        mods: [(stat: "dmg_hellfire", op: Add, value: 0.50)],
+        rules: [AllHellfire],
+    ),
+    (
+        id: "patient_flame", name: "THE PATIENT FLAME", slot: Ring,
+        lore: "IT DOES NOT NEED YOU TO WATCH.",
+        rules: [EternalIgnite],
+    ),
+    (
+        id: "open_vein", name: "THIRST OF THE OPEN VEIN", slot: Ring,
+        lore: "STEP ANYWHERE. PAY EVERYWHERE.",
+        rules: [BloodDodge],
+    ),
+    (
+        id: "basilisk", name: "BASILISK'S REGARD", slot: Weapon,
+        lore: "WHAT IT NOTICES, STOPS.",
+        mods: [(stat: "crit_chance", op: Add, value: 0.15)],
+        rules: [CritsPetrify],
+    ),
+    (
+        id: "standing_stones", name: "LITURGY OF STANDING STONES", slot: Relic,
+        lore: "THE GROUND REMEMBERS WHOEVER WAITS.",
+        mods: [(stat: "hp_regen", op: Add, value: 3.0)],
+        rules: [StillnessConsecrates],
+    ),
+    (
+        id: "choir_voice", name: "VOICE OF THE CHOIR", slot: Relic,
+        lore: "YOUR SERVANTS SING YOUR SONG.",
+        mods: [(stat: "minion_dmg", op: Add, value: 0.60)],
+        rules: [ServantsInherit],
+    ),
+    // ---- pure outrageous power (~25%)
+    (
+        id: "counting_mouth", name: "MOUTH THAT COUNTS", slot: Weapon,
+        lore: "FIVE. IT ALWAYS GETS TO FIVE.",
+        mods: [(stat: "cast_speed", op: Add, value: 0.20)],
+        reactions: [(on: "nth_cast", action: Nova(pct: 2.0, dtype: Hex, radius: 5.0))],
+    ),
+    (
+        id: "hunger_wheel", name: "HUNGER WHEEL", slot: Armor,
+        lore: "IT TURNS FASTER WHEN FED.",
+        mods: [(stat: "move_speed", op: Add, value: 0.20)],
+        reactions: [(on: "on_kill", action: Frenzy(ticks: 200, cast_speed: 0.5, move_speed: 0.3))],
+    ),
+    (
+        id: "beckoning_ledger", name: "BECKONING LEDGER", slot: Armor,
+        lore: "EVERYTHING OWED COMES WALKING.",
+        mods: [(stat: "loot_quant", op: Add, value: 0.30)],
+        rules: [LootGravity],
+    ),
+    // ---- build-around curiosities (~15%)
+    (
+        id: "tenth_echo", name: "TENTH ECHO", slot: Weapon,
+        lore: "THE FIRST NINE WERE PRACTICE.",
+        reactions: [(on: "on_crit", chance: 0.30, action: Echo(pct: 0.60))],
+    ),
+    (
+        id: "small_gods", name: "DEBT OF SMALL GODS", slot: Ring,
+        lore: "THEY PAY ATTENTION WHEN YOU PICK THINGS UP.",
+        reactions: [(on: "on_loot_pickup", action: Nova(pct: 1.5, dtype: Void, radius: 4.5))],
+    ),
+]
