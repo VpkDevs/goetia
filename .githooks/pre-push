@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+# Pre-push gate — the same checks CI runs, enforced locally.
+#
+# Enable once per clone:   git config core.hooksPath .githooks
+# Bypass for a WIP branch: git push --no-verify
+set -uo pipefail
+
+# This machine builds with the GNU toolchain and needs MinGW's dlltool/as on
+# PATH; harmless everywhere else.
+MINGW="$HOME/scoop/apps/mingw/current/bin"
+[ -d "$MINGW" ] && export PATH="$MINGW:$PATH"
+
+fail=0
+step() {
+  printf '  %-46s' "$1"
+  shift
+  if "$@" >/tmp/goetia-prepush.log 2>&1; then
+    echo "ok"
+  else
+    echo "FAIL"
+    tail -25 /tmp/goetia-prepush.log | sed 's/^/      /'
+    fail=1
+  fi
+}
+
+echo "pre-push gate:"
+step "format (cargo fmt --check)"      cargo fmt --all --check
+step "lints  (clippy -D warnings)"     cargo clippy --workspace --all-targets -- -D warnings
+step "tests  (workspace, headless)"    cargo test --workspace
+
+if [ "$fail" -ne 0 ]; then
+  echo ""
+  echo "push blocked. fix the above, or 'git push --no-verify' to override."
+  exit 1
+fi
+echo "all gates green."
+exit 0
