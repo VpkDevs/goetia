@@ -139,9 +139,18 @@ impl ParticleSystem {
             label: Some("particle-sim"),
             layout: &sim_layout,
             entries: &[
-                wgpu::BindGroupEntry { binding: 0, resource: particles.as_entire_binding() },
-                wgpu::BindGroupEntry { binding: 1, resource: spawns.as_entire_binding() },
-                wgpu::BindGroupEntry { binding: 2, resource: params.as_entire_binding() },
+                wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: particles.as_entire_binding(),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 1,
+                    resource: spawns.as_entire_binding(),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 2,
+                    resource: params.as_entire_binding(),
+                },
             ],
         });
 
@@ -157,7 +166,10 @@ impl ParticleSystem {
         let draw_bind = device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("particle-draw"),
             layout: &draw_layout,
-            entries: &[wgpu::BindGroupEntry { binding: 0, resource: particles.as_entire_binding() }],
+            entries: &[wgpu::BindGroupEntry {
+                binding: 0,
+                resource: particles.as_entire_binding(),
+            }],
         });
 
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
@@ -269,7 +281,9 @@ impl ParticleSystem {
         self.staging.clear();
         let now = self.clock.elapsed().as_secs_f64();
         for b in bursts {
-            let n = b.count.min(MAX_SPAWNS_PER_FRAME - self.staging.len() as u32);
+            let n = b
+                .count
+                .min(MAX_SPAWNS_PER_FRAME - self.staging.len() as u32);
             for _ in 0..n {
                 // Uniform direction on sphere.
                 let z = self.rng.range_f32(-1.0, 1.0);

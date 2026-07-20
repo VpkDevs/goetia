@@ -7,6 +7,9 @@ use crate::content::*;
 use crate::vocab::*;
 use goetia::prelude::*;
 
+// Args mirror the realm-modifier pipeline (hp/dmg/speed multipliers arrive
+// independently); bundling them into a struct would only move the noise.
+#[allow(clippy::too_many_arguments)]
 pub fn spawn_enemy(
     eng: &mut Engine,
     db: &ContentDb,
@@ -71,7 +74,11 @@ pub fn tick_enemies(eng: &mut Engine, gs: &mut Gs) {
         eng.world.insert_resource(grid);
     }
 
-    let ppos = eng.world.get::<Pos>(gs.pc.entity).map(|p| p.0).unwrap_or(Vec2::ZERO);
+    let ppos = eng
+        .world
+        .get::<Pos>(gs.pc.entity)
+        .map(|p| p.0)
+        .unwrap_or(Vec2::ZERO);
     let mut rng = eng.streams.get("ai").clone();
 
     struct Attack {
@@ -102,8 +109,8 @@ pub fn tick_enemies(eng: &mut Engine, gs: &mut Gs) {
         let grid = eng.world.remove_resource::<SpatialGrid>().unwrap();
         let db = &gs.db;
         let blight = gs.blight_phase;
-        eng.world.each::<(&mut Pos, &mut Vel, &mut EnemyC, &StatusBag)>(
-            |ent, (p, v, ec, bag)| {
+        eng.world
+            .each::<(&mut Pos, &mut Vel, &mut EnemyC, &StatusBag)>(|ent, (p, v, ec, bag)| {
                 let def = db.enemy(&ec.def_id);
                 let petrified = bag.has(ST_PETRIFY);
                 if petrified {
@@ -218,7 +225,10 @@ pub fn tick_enemies(eng: &mut Engine, gs: &mut Gs) {
                         }
                         if ec.attack_cd == 0 {
                             ec.attack_cd = 90;
-                            heals.push(HealPulse { at: p.0, amount: *heal * (1.0 + gs.tier as f32 * 0.2) });
+                            heals.push(HealPulse {
+                                at: p.0,
+                                amount: *heal * (1.0 + gs.tier as f32 * 0.2),
+                            });
                         }
                     }
                     EnemyAiKind::Wheel { orbit_radius } => {
@@ -242,19 +252,19 @@ pub fn tick_enemies(eng: &mut Engine, gs: &mut Gs) {
                     }
                 }
                 p.0 += v.0 * FIXED_DT;
-            },
-        );
+            });
         eng.world.insert_resource(grid);
     }
     *eng.streams.get("ai") = rng;
 
     // Keep enemies on walkable ground.
     let mut clamp: Vec<(Entity, Vec2, Vec2)> = Vec::new();
-    eng.world.each::<(&Pos, &PrevPos, &EnemyC)>(|e, (p, pp, _)| {
-        if !crate::run::pos_walkable(gs, p.0) {
-            clamp.push((e, pp.0, p.0));
-        }
-    });
+    eng.world
+        .each::<(&Pos, &PrevPos, &EnemyC)>(|e, (p, pp, _)| {
+            if !crate::run::pos_walkable(gs, p.0) {
+                clamp.push((e, pp.0, p.0));
+            }
+        });
     for (e, prev, _) in clamp {
         if let Some(p) = eng.world.get_mut::<Pos>(e) {
             p.0 = prev;
@@ -295,13 +305,24 @@ pub fn tick_enemies(eng: &mut Engine, gs: &mut Gs) {
                         h.flash = 1.0;
                     }
                 } else {
-                    let pp = eng.world.get::<Pos>(gs.pc.entity).map(|p| p.0).unwrap_or(Vec2::ZERO);
+                    let pp = eng
+                        .world
+                        .get::<Pos>(gs.pc.entity)
+                        .map(|p| p.0)
+                        .unwrap_or(Vec2::ZERO);
                     if pp.distance(a.at) < 1.6 {
                         hit_player(eng, gs, a.dmg, a.dtype, false);
                         if let Some(inf) = &a.inflict {
                             let roll = eng.streams.get("ai").next_f32();
                             if roll < inf.chance && can_status_player(gs, &inf.status) {
-                                apply_status_to(eng, gs, gs.pc.entity, &inf.status, inf.stacks, a.dmg * inf.magnitude);
+                                apply_status_to(
+                                    eng,
+                                    gs,
+                                    gs.pc.entity,
+                                    &inf.status,
+                                    inf.stacks,
+                                    a.dmg * inf.magnitude,
+                                );
                                 if status_by_name(&inf.status) == ST_DISCORD {
                                     gs.pc.discorded = 300;
                                 }
@@ -337,7 +358,9 @@ pub fn tick_enemies(eng: &mut Engine, gs: &mut Gs) {
     }
     for hp in heals {
         let mut near = Vec::new();
-        eng.world.resource::<SpatialGrid>().query_radius(hp.at, 7.0, MASK_ENEMY, &mut near);
+        eng.world
+            .resource::<SpatialGrid>()
+            .query_radius(hp.at, 7.0, MASK_ENEMY, &mut near);
         for (e, _) in near {
             if let Some(h) = eng.world.get_mut::<Health>(e) {
                 h.hp = (h.hp + hp.amount).min(h.max);
@@ -396,7 +419,9 @@ fn apart_mult(def: &EnemyDef, grid: &SpatialGrid, at: Vec2) -> f32 {
 
 fn nearest_servant(eng: &mut Engine, gs: &Gs, at: Vec2, r: f32) -> Option<Entity> {
     let mut near = Vec::new();
-    eng.world.resource::<SpatialGrid>().query_radius(at, r, MASK_PLAYER, &mut near);
+    eng.world
+        .resource::<SpatialGrid>()
+        .query_radius(at, r, MASK_PLAYER, &mut near);
     near.retain(|(e, _)| *e != gs.pc.entity);
     near.first().map(|(e, _)| *e)
 }
@@ -404,25 +429,36 @@ fn nearest_servant(eng: &mut Engine, gs: &Gs, at: Vec2, r: f32) -> Option<Entity
 // ------------------------------------------------------------------ bosses
 
 pub fn tick_boss(eng: &mut Engine, gs: &mut Gs) {
-    let ppos = eng.world.get::<Pos>(gs.pc.entity).map(|p| p.0).unwrap_or(Vec2::ZERO);
+    let ppos = eng
+        .world
+        .get::<Pos>(gs.pc.entity)
+        .map(|p| p.0)
+        .unwrap_or(Vec2::ZERO);
     let mut actions: Vec<(Entity, BossKind, u8, Vec2)> = Vec::new();
-    eng.world.each::<(&Pos, &mut BossC, &Health)>(|e, (p, b, h)| {
-        b.timer = b.timer.saturating_sub(1);
-        let frac = h.hp / h.max;
-        let phase = if frac < 0.33 { 2 } else if frac < 0.66 { 1 } else { 0 };
-        if phase != b.phase as usize {
-            b.phase = phase as u8;
-            b.timer = 0; // phase transition acts immediately
-        }
-        if b.timer == 0 {
-            b.timer = match b.kind {
-                BossKind::Vassago => 140,
-                BossKind::Andras => 120,
-                BossKind::Buer => 150,
-            } - (phase as u16) * 25;
-            actions.push((e, b.kind, phase as u8, p.0));
-        }
-    });
+    eng.world
+        .each::<(&Pos, &mut BossC, &Health)>(|e, (p, b, h)| {
+            b.timer = b.timer.saturating_sub(1);
+            let frac = h.hp / h.max;
+            let phase = if frac < 0.33 {
+                2
+            } else if frac < 0.66 {
+                1
+            } else {
+                0
+            };
+            if phase != b.phase as usize {
+                b.phase = phase as u8;
+                b.timer = 0; // phase transition acts immediately
+            }
+            if b.timer == 0 {
+                b.timer = match b.kind {
+                    BossKind::Vassago => 140,
+                    BossKind::Andras => 120,
+                    BossKind::Buer => 150,
+                } - (phase as u16) * 25;
+                actions.push((e, b.kind, phase as u8, p.0));
+            }
+        });
 
     for (boss, kind, phase, bpos) in actions {
         match kind {
@@ -430,8 +466,8 @@ pub fn tick_boss(eng: &mut Engine, gs: &mut Gs) {
                 // Light-orb spreads: his attacks are the only lamps in the dark.
                 let n = 8 + phase as u32 * 4;
                 for i in 0..n {
-                    let a = i as f32 / n as f32 * std::f32::consts::TAU
-                        + eng.clock.tick as f32 * 0.01;
+                    let a =
+                        i as f32 / n as f32 * std::f32::consts::TAU + eng.clock.tick as f32 * 0.01;
                     let dir = Vec2::new(a.cos(), a.sin());
                     let mut dmg = [0.0; 4];
                     dmg[DmgType::Hex.index()] = 9.0 + gs.tier as f32 * 2.5;
@@ -459,7 +495,17 @@ pub fn tick_boss(eng: &mut Engine, gs: &mut Gs) {
                     for i in 0..2 {
                         let a = i as f32 * 3.1 + eng.clock.tick as f32 * 0.1;
                         let at = bpos + Vec2::new(a.cos(), a.sin()) * 6.0;
-                        spawn_enemy(eng, &gs.db, "index_wraith", at, gs.tier, false, 1.0, 1.0, 1.0);
+                        spawn_enemy(
+                            eng,
+                            &gs.db,
+                            "index_wraith",
+                            at,
+                            gs.tier,
+                            false,
+                            1.0,
+                            1.0,
+                            1.0,
+                        );
                     }
                 }
             }

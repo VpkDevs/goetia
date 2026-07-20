@@ -1,0 +1,4 @@
+# Engine + game share one format. Defaults, with a slightly wider line to suit
+# the math-heavy render/combat code.
+max_width = 100
+edition = "2021"

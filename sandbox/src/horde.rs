@@ -69,7 +69,11 @@ fn spawn_enemy(world: &mut World, pos: Vec2, phase: f32) {
             state: AiState::Seek,
             timer: 60,
             radius: 0.45,
-            spin: if (phase * 10.0) as u32 % 2 == 0 { 1.0 } else { -1.0 },
+            spin: if ((phase * 10.0) as u32).is_multiple_of(2) {
+                1.0
+            } else {
+                -1.0
+            },
             phase,
         },
     ));
@@ -85,44 +89,45 @@ pub fn tick(eng: &mut Engine) {
     // --- AI state machine (sim RNG: "ai" stream)
     {
         let mut rng = eng.streams.get("ai").clone();
-        eng.world.each::<(&Pos, &mut Vel, &mut Enemy)>(|_, (p, v, e)| {
-            e.timer = e.timer.saturating_sub(1);
-            let to_center = -p.0;
-            let dist = to_center.length().max(0.001);
-            let dir = to_center / dist;
-            match e.state {
-                AiState::Seek => {
-                    let want = dist - 6.0; // hold a ring around the turret
-                    v.0 = dir * want.clamp(-1.0, 1.0) * 3.0;
-                    if e.timer == 0 {
-                        e.state = AiState::Strafe;
-                        e.timer = 90 + rng.range_u32(120) as u16;
+        eng.world
+            .each::<(&Pos, &mut Vel, &mut Enemy)>(|_, (p, v, e)| {
+                e.timer = e.timer.saturating_sub(1);
+                let to_center = -p.0;
+                let dist = to_center.length().max(0.001);
+                let dir = to_center / dist;
+                match e.state {
+                    AiState::Seek => {
+                        let want = dist - 6.0; // hold a ring around the turret
+                        v.0 = dir * want.clamp(-1.0, 1.0) * 3.0;
+                        if e.timer == 0 {
+                            e.state = AiState::Strafe;
+                            e.timer = 90 + rng.range_u32(120) as u16;
+                        }
+                    }
+                    AiState::Strafe => {
+                        let tangent = Vec2::new(-dir.y, dir.x) * e.spin;
+                        v.0 = tangent * 2.5 + dir * (dist - 8.0).clamp(-1.0, 1.0);
+                        if e.timer == 0 {
+                            e.state = AiState::Telegraph;
+                            e.timer = 24;
+                        }
+                    }
+                    AiState::Telegraph => {
+                        v.0 = Vec2::ZERO;
+                        if e.timer == 0 {
+                            e.state = AiState::Lunge;
+                            e.timer = 18;
+                        }
+                    }
+                    AiState::Lunge => {
+                        v.0 = dir * 12.0;
+                        if e.timer == 0 {
+                            e.state = AiState::Seek;
+                            e.timer = 30 + rng.range_u32(90) as u16;
+                        }
                     }
                 }
-                AiState::Strafe => {
-                    let tangent = Vec2::new(-dir.y, dir.x) * e.spin;
-                    v.0 = tangent * 2.5 + dir * (dist - 8.0).clamp(-1.0, 1.0);
-                    if e.timer == 0 {
-                        e.state = AiState::Telegraph;
-                        e.timer = 24;
-                    }
-                }
-                AiState::Telegraph => {
-                    v.0 = Vec2::ZERO;
-                    if e.timer == 0 {
-                        e.state = AiState::Lunge;
-                        e.timer = 18;
-                    }
-                }
-                AiState::Lunge => {
-                    v.0 = dir * 12.0;
-                    if e.timer == 0 {
-                        e.state = AiState::Seek;
-                        e.timer = 30 + rng.range_u32(90) as u16;
-                    }
-                }
-            }
-        });
+            });
         *eng.streams.get("ai") = rng;
     }
 
@@ -132,12 +137,17 @@ pub fn tick(eng: &mut Engine) {
         for i in 0..FIRE_PER_TICK {
             let a = tick as f32 * golden + i as f32 / FIRE_PER_TICK as f32 * std::f32::consts::TAU;
             let dir = Vec2::new(a.cos(), a.sin());
-            let glow = (tick as usize * FIRE_PER_TICK + i) % 60 == 0;
+            let glow = (tick as usize * FIRE_PER_TICK + i).is_multiple_of(60);
             eng.world.spawn((
                 Pos(dir * 0.8),
                 PrevPos(dir * 0.8),
                 Vel(dir * 14.0),
-                Projectile { life: PROJECTILE_LIFE, radius: 0.15, glow, ..Default::default() },
+                Projectile {
+                    life: PROJECTILE_LIFE,
+                    radius: 0.15,
+                    glow,
+                    ..Default::default()
+                },
             ));
         }
     }
@@ -160,31 +170,29 @@ pub fn tick(eng: &mut Engine) {
             let world = &mut eng.world;
             // Split-borrow dance: grid lives outside the ECS during the sweep.
             let grid = world.remove_resource::<SpatialGrid>().unwrap();
-            world.each::<(&mut Pos, &PrevPos, &mut Vel, &mut Projectile)>(
-                |ent, (p, pp, v, pr)| {
-                    pr.life = pr.life.saturating_sub(1);
-                    if pr.life == 0 {
-                        expired.push(ent);
-                        return;
+            world.each::<(&mut Pos, &PrevPos, &mut Vel, &mut Projectile)>(|ent, (p, pp, v, pr)| {
+                pr.life = pr.life.saturating_sub(1);
+                if pr.life == 0 {
+                    expired.push(ent);
+                    return;
+                }
+                // Arena bounce.
+                if p.0.x.abs() > arena_half {
+                    p.0.x = p.0.x.clamp(-arena_half, arena_half);
+                    v.0.x = -v.0.x;
+                }
+                if p.0.y.abs() > arena_half {
+                    p.0.y = p.0.y.clamp(-arena_half, arena_half);
+                    v.0.y = -v.0.y;
+                }
+                if let Some((hit_ent, at, _t)) = grid.sweep(pp.0, p.0, pr.radius, ENEMY_MASK) {
+                    if hit_ent != pr.last_hit {
+                        pr.last_hit = hit_ent;
+                        pr.pierce = pr.pierce.saturating_sub(1);
+                        hits.push((ent, hit_ent, at, pr.pierce == 0));
                     }
-                    // Arena bounce.
-                    if p.0.x.abs() > arena_half {
-                        p.0.x = p.0.x.clamp(-arena_half, arena_half);
-                        v.0.x = -v.0.x;
-                    }
-                    if p.0.y.abs() > arena_half {
-                        p.0.y = p.0.y.clamp(-arena_half, arena_half);
-                        v.0.y = -v.0.y;
-                    }
-                    if let Some((hit_ent, at, _t)) = grid.sweep(pp.0, p.0, pr.radius, ENEMY_MASK) {
-                        if hit_ent != pr.last_hit {
-                            pr.last_hit = hit_ent;
-                            pr.pierce = pr.pierce.saturating_sub(1);
-                            hits.push((ent, hit_ent, at, pr.pierce == 0));
-                        }
-                    }
-                },
-            );
+                }
+            });
             world.insert_resource(grid);
         }
 
@@ -205,7 +213,10 @@ pub fn tick(eng: &mut Engine) {
                 }
             }
             let strength = if dead.is_some() { 3.0 } else { 1.0 };
-            eng.world.resource_mut::<FxQueue>().impacts.push((at, strength));
+            eng.world
+                .resource_mut::<FxQueue>()
+                .impacts
+                .push((at, strength));
             if let Some(e) = dead {
                 let phase = eng.world.get::<Enemy>(e).map(|en| en.phase).unwrap_or(0.0);
                 if let Some(p) = eng.world.get::<Pos>(e) {
@@ -217,7 +228,14 @@ pub fn tick(eng: &mut Engine) {
             if !eng.world.despawn(e) {
                 continue; // guard: 1 death = exactly 1 respawn
             }
-            eng.world.spawn((Pos(pos), PrevPos(pos), Corpse { age: 0, max_age: 300 }));
+            eng.world.spawn((
+                Pos(pos),
+                PrevPos(pos),
+                Corpse {
+                    age: 0,
+                    max_age: 300,
+                },
+            ));
             // Respawn at the rim to hold the population at 500.
             let a = rng.range_f32(0.0, std::f32::consts::TAU);
             let p = Vec2::new(a.cos(), a.sin()) * (arena_half - 1.5);
@@ -254,14 +272,15 @@ pub fn tick(eng: &mut Engine) {
 pub fn world_hash(eng: &mut Engine) -> u64 {
     let mut h = StateHasher::new();
     h.write_u64(eng.clock.tick);
-    eng.world.each::<(&Pos, &Vel, &Hp, &Enemy)>(|ent, (p, v, hp, e)| {
-        h.write_u64(ent.to_bits());
-        h.write_vec2(p.0.x, p.0.y);
-        h.write_vec2(v.0.x, v.0.y);
-        h.write_f32(hp.0);
-        h.write_u32(e.state as u32);
-        h.write_u32(e.timer as u32);
-    });
+    eng.world
+        .each::<(&Pos, &Vel, &Hp, &Enemy)>(|ent, (p, v, hp, e)| {
+            h.write_u64(ent.to_bits());
+            h.write_vec2(p.0.x, p.0.y);
+            h.write_vec2(v.0.x, v.0.y);
+            h.write_f32(hp.0);
+            h.write_u32(e.state as u32);
+            h.write_u32(e.timer as u32);
+        });
     eng.world.each::<(&Pos, &Projectile)>(|ent, (p, pr)| {
         h.write_u64(ent.to_bits());
         h.write_vec2(p.0.x, p.0.y);

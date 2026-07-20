@@ -80,7 +80,8 @@ impl Engine {
     /// Cursor position on the ground plane (y=0).
     pub fn mouse_ground(&self) -> glam::Vec3 {
         let aspect = self.viewport.x / self.viewport.y.max(1.0);
-        self.camera.screen_to_ground(self.input.mouse_pos, self.viewport, aspect)
+        self.camera
+            .screen_to_ground(self.input.mouse_pos, self.viewport, aspect)
     }
 }
 
@@ -182,11 +183,15 @@ impl App {
                             eng.camera.update(dt as f32);
                             eng.floaters.update(dt as f32);
 
-                            let mut frame = FrameSubmit::default();
-                            frame.particle_dt = if in_hitstop {
-                                0.0
-                            } else {
-                                (dt * eng.clock.time_scale) as f32
+                            let mut frame = FrameSubmit {
+                                // Hitstop freezes particles too, so the whole
+                                // frame reads as one held beat.
+                                particle_dt: if in_hitstop {
+                                    0.0
+                                } else {
+                                    (dt * eng.clock.time_scale) as f32
+                                },
+                                ..Default::default()
                             };
                             let alpha = eng.clock.alpha;
                             game.render_extract(&mut eng, &mut frame, alpha);
@@ -228,10 +233,16 @@ impl App {
         let (avg, max, worst) = eng.overlay.stats();
         println!("--- goetia bench report ---");
         println!("frames:        {frames}");
-        println!("avg frame:     {avg:.2} ms ({:.0} fps)", 1000.0 / avg.max(0.001));
+        println!(
+            "avg frame:     {avg:.2} ms ({:.0} fps)",
+            1000.0 / avg.max(0.001)
+        );
         println!("window max:    {max:.2} ms");
         println!("worst ever:    {worst:.2} ms");
-        println!("frames >20ms:  {} of {}", eng.overlay.frames_over_20ms, eng.overlay.total_frames);
+        println!(
+            "frames >20ms:  {} of {}",
+            eng.overlay.frames_over_20ms, eng.overlay.total_frames
+        );
     }
 
     /// Headless fixed-tick run for CI / determinism tests. Returns the engine

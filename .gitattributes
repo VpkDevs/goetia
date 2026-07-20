@@ -1,0 +1,13 @@
+# Normalize to LF in the repo and the working tree. Without this, Windows
+# checkouts store CRLF, which makes cross-platform diffs and CI noisy.
+* text=auto eol=lf
+
+# Never touch binaries.
+*.png binary
+*.jpg binary
+*.ogg binary
+*.wav binary
+*.ico binary
+
+# Keep generated lockfile diffs collapsed in PR review.
+Cargo.lock linguist-generated=true diff=lock

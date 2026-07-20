@@ -1,8 +1,8 @@
 //! PCG32 random streams. All simulation randomness flows through named
 //! streams so that e.g. an extra loot roll never perturbs level layout.
 
-use std::collections::BTreeMap;
 use serde::{Deserialize, Serialize};
+use std::collections::BTreeMap;
 
 /// PCG-XSH-RR 64/32 (O'Neill). Deterministic, fast, serializable.
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
@@ -13,7 +13,10 @@ pub struct Pcg32 {
 
 impl Pcg32 {
     pub fn new(seed: u64, stream: u64) -> Self {
-        let mut rng = Pcg32 { state: 0, inc: (stream << 1) | 1 };
+        let mut rng = Pcg32 {
+            state: 0,
+            inc: (stream << 1) | 1,
+        };
         rng.next_u32();
         rng.state = rng.state.wrapping_add(seed);
         rng.next_u32();
@@ -109,7 +112,10 @@ pub struct PcgStreams {
 
 impl PcgStreams {
     pub fn new(master_seed: u64) -> Self {
-        PcgStreams { master_seed, streams: BTreeMap::new() }
+        PcgStreams {
+            master_seed,
+            streams: BTreeMap::new(),
+        }
     }
 
     pub fn master_seed(&self) -> u64 {

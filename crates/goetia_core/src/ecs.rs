@@ -17,12 +17,18 @@ pub struct Entity {
 }
 
 impl Entity {
-    pub const DEAD: Entity = Entity { index: u32::MAX, gen: u32::MAX };
+    pub const DEAD: Entity = Entity {
+        index: u32::MAX,
+        gen: u32::MAX,
+    };
     pub fn to_bits(self) -> u64 {
         ((self.gen as u64) << 32) | self.index as u64
     }
     pub fn from_bits(b: u64) -> Self {
-        Entity { index: b as u32, gen: (b >> 32) as u32 }
+        Entity {
+            index: b as u32,
+            gen: (b >> 32) as u32,
+        }
     }
 }
 
@@ -36,7 +42,17 @@ struct Meta {
 
 // ---------------------------------------------------------------- columns
 
+/// Constructor for a type-erased component column.
+pub type ColumnCtor = fn() -> Box<dyn Column>;
+/// A deferred structural edit applied to the world later.
+type WorldOp = Box<dyn FnOnce(&mut World) + Send>;
+/// Extra initialization run on the destination archetype during migration.
+type ArchetypeInit = Box<dyn FnOnce(&mut Archetype)>;
+
 #[doc(hidden)]
+// `len` here is a column-length accessor on a type-erased internal trait; an
+// `is_empty` counterpart would be dead weight.
+#[allow(clippy::len_without_is_empty)]
 pub trait Column: Send + Sync {
     fn as_any(&self) -> &dyn Any;
     fn as_any_mut(&mut self) -> &mut dyn Any;
@@ -73,7 +89,12 @@ impl<T: 'static + Send + Sync> Column for Col<T> {
     }
     fn move_row(&mut self, row: usize, target: &mut dyn Column) {
         let v = self.vec_mut().swap_remove(row);
-        target.as_any_mut().downcast_mut::<Col<T>>().unwrap().vec_mut().push(v);
+        target
+            .as_any_mut()
+            .downcast_mut::<Col<T>>()
+            .unwrap()
+            .vec_mut()
+            .push(v);
     }
     fn new_empty(&self) -> Box<dyn Column> {
         Box::new(Col::<T>(UnsafeCell::new(Vec::new())))
@@ -118,29 +139,37 @@ impl Archetype {
         self.cols[i].as_any_mut().downcast_mut::<Col<T>>()
     }
 
-    /// Raw data pointer to the column for `T`. Caller upholds aliasing rules
-    /// (exclusive world access, or scheduler-verified disjoint access sets).
+    /// Raw data pointer to the column for `T`.
+    ///
+    /// # Safety
+    /// The caller must uphold aliasing rules: either hold exclusive access to
+    /// the world, or run under the scheduler, which proves that concurrently
+    /// executing systems have disjoint component read/write sets. Returns a
+    /// dangling-if-empty pointer valid for `Archetype::len()` elements.
     pub unsafe fn col_ptr<T: 'static + Send + Sync>(&self) -> *mut T {
         let c = self.col::<T>().expect("archetype missing column");
         (*c.0.get()).as_mut_ptr()
     }
 
     pub fn push_value<T: 'static + Send + Sync>(&mut self, v: T) {
-        self.col_mut::<T>().expect("bundle wrote unknown component").vec_mut().push(v);
+        self.col_mut::<T>()
+            .expect("bundle wrote unknown component")
+            .vec_mut()
+            .push(v);
     }
 }
 
 // ---------------------------------------------------------------- bundles
 
 pub trait Bundle: 'static {
-    fn types(out: &mut Vec<(TypeId, fn() -> Box<dyn Column>)>);
+    fn types(out: &mut Vec<(TypeId, ColumnCtor)>);
     fn write(self, arch: &mut Archetype);
 }
 
 macro_rules! impl_bundle {
     ($($t:ident.$idx:tt),+) => {
         impl<$($t: 'static + Send + Sync),+> Bundle for ($($t,)+) {
-            fn types(out: &mut Vec<(TypeId, fn() -> Box<dyn Column>)>) {
+            fn types(out: &mut Vec<(TypeId, ColumnCtor)>) {
                 $(out.push((TypeId::of::<$t>(), new_col::<$t>));)+
             }
             fn write(self, arch: &mut Archetype) {
@@ -170,8 +199,12 @@ pub trait Query<'w>: Sized {
     type Ptr: Copy;
     fn collect(out: &mut Vec<(TypeId, bool)>);
     fn matches(arch: &Archetype) -> bool;
-    /// Safety: aliasing discipline upheld by caller (see [`Archetype::col_ptr`]).
+    /// # Safety
+    /// Aliasing discipline is upheld by the caller; see [`Archetype::col_ptr`].
     unsafe fn ptr(arch: &Archetype) -> Self::Ptr;
+    /// # Safety
+    /// `row` must be `< Archetype::len()` for the archetype `p` came from, and
+    /// the aliasing contract of [`Query::ptr`] must still hold.
     unsafe fn get(p: Self::Ptr, row: usize) -> Self::Item;
 }
 
@@ -256,7 +289,7 @@ impl World {
         Self::default()
     }
 
-    fn get_or_create_archetype(&mut self, mut types: Vec<(TypeId, fn() -> Box<dyn Column>)>) -> u32 {
+    fn get_or_create_archetype(&mut self, mut types: Vec<(TypeId, ColumnCtor)>) -> u32 {
         types.sort_by_key(|(t, _)| *t);
         debug_assert!(
             types.windows(2).all(|w| w[0].0 != w[1].0),
@@ -284,7 +317,12 @@ impl World {
             Entity { index, gen: m.gen }
         } else {
             let index = self.metas.len() as u32;
-            self.metas.push(Meta { gen: 0, arch: 0, row: 0, alive: true });
+            self.metas.push(Meta {
+                gen: 0,
+                arch: 0,
+                row: 0,
+                alive: true,
+            });
             Entity { index, gen: 0 }
         }
     }
@@ -402,9 +440,14 @@ impl World {
             self.arch_index.insert(sig, i);
             i
         };
-        self.migrate(e, src_i as u32, dst_i, Some(Box::new(move |arch: &mut Archetype| {
-            arch.push_value(value);
-        })));
+        self.migrate(
+            e,
+            src_i as u32,
+            dst_i,
+            Some(Box::new(move |arch: &mut Archetype| {
+                arch.push_value(value);
+            })),
+        );
     }
 
     /// Remove a component, migrating the entity to the reduced archetype.
@@ -432,7 +475,11 @@ impl World {
                 .filter(|(t, _)| **t != removed)
                 .map(|(_, c)| c.new_empty())
                 .collect();
-            let arch = Archetype { sig: sig.clone(), cols, entities: Vec::new() };
+            let arch = Archetype {
+                sig: sig.clone(),
+                cols,
+                entities: Vec::new(),
+            };
             let i = self.archetypes.len() as u32;
             self.archetypes.push(arch);
             self.arch_index.insert(sig, i);
@@ -442,13 +489,7 @@ impl World {
     }
 
     /// Move entity between archetypes, transplanting shared columns.
-    fn migrate(
-        &mut self,
-        e: Entity,
-        src_i: u32,
-        dst_i: u32,
-        extra: Option<Box<dyn FnOnce(&mut Archetype)>>,
-    ) {
+    fn migrate(&mut self, e: Entity, src_i: u32, dst_i: u32, extra: Option<ArchetypeInit>) {
         debug_assert_ne!(src_i, dst_i);
         let row = self.metas[e.index as usize].row as usize;
         let (src, dst) = {
@@ -494,12 +535,14 @@ impl World {
         unsafe { self.each_unchecked::<Q>(&mut f) }
     }
 
-    /// Safety: caller guarantees no aliasing mutable access to the same
-    /// component columns from another thread (scheduler contract).
-    pub unsafe fn each_unchecked<'w, Q: Query<'w>>(
-        &'w self,
-        f: &mut impl FnMut(Entity, Q::Item),
-    ) {
+    /// Iterate without the exclusive-borrow requirement of [`World::each`].
+    ///
+    /// # Safety
+    /// The caller must guarantee that no other thread holds aliasing mutable
+    /// access to the same component columns for the duration of the call.
+    /// The scheduler upholds this by batching only systems with disjoint
+    /// write sets.
+    pub unsafe fn each_unchecked<'w, Q: Query<'w>>(&'w self, f: &mut impl FnMut(Entity, Q::Item)) {
         for arch in &self.archetypes {
             if arch.entities.is_empty() || !Q::matches(arch) {
                 continue;
@@ -529,7 +572,10 @@ impl World {
 
     pub fn archetype_stats(&self) -> Vec<(usize, usize)> {
         // (component count, entity count) per archetype — for the debug overlay.
-        self.archetypes.iter().map(|a| (a.sig.len(), a.entities.len())).collect()
+        self.archetypes
+            .iter()
+            .map(|a| (a.sig.len(), a.entities.len()))
+            .collect()
     }
 
     // ------------------------------------------------------------ resources
@@ -547,7 +593,9 @@ impl World {
             .expect("missing resource")
     }
     pub fn try_resource<T: 'static + Send + Sync>(&self) -> Option<&T> {
-        self.resources.get(&TypeId::of::<T>()).and_then(|b| b.downcast_ref())
+        self.resources
+            .get(&TypeId::of::<T>())
+            .and_then(|b| b.downcast_ref())
     }
     pub fn remove_resource<T: 'static + Send + Sync>(&mut self) -> Option<T> {
         self.resources
@@ -562,7 +610,7 @@ impl World {
 /// Deferred structural changes, recorded during iteration, applied after.
 #[derive(Default)]
 pub struct CommandBuffer {
-    ops: Vec<Box<dyn FnOnce(&mut World) + Send>>,
+    ops: Vec<WorldOp>,
 }
 
 impl CommandBuffer {

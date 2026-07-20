@@ -75,7 +75,13 @@ impl Game for Demonicon {
         let loaded = load_all();
         let (loadout, bank, dust, loot, progress) = match loaded {
             Some(l) => (l.loadout, l.bank, l.dust, l.loot, l.progress),
-            None => (Self::default_loadout(&db), Vec::new(), 30, LootTables::default(), Progress::default()),
+            None => (
+                Self::default_loadout(&db),
+                Vec::new(),
+                30,
+                LootTables::default(),
+                Progress::default(),
+            ),
         };
         self.progress = progress;
         let build = compile_build(&db, &loadout);
@@ -229,11 +235,20 @@ impl Game for Demonicon {
 
     fn render_extract(&mut self, eng: &mut Engine, frame: &mut FrameSubmit, alpha: f32) {
         let gs = self.gs.as_mut().unwrap();
-        let Some(m) = self.meshes.as_ref() else { return };
+        let Some(m) = self.meshes.as_ref() else {
+            return;
+        };
         match &self.mode {
             Mode::Court => {
                 draw_court(eng, gs, m, frame, alpha, self.court.sel_demon);
-                draw_hud_court(eng, gs, &mut frame.ui, self.court.sel_demon, self.court.tier, &self.progress);
+                draw_hud_court(
+                    eng,
+                    gs,
+                    &mut frame.ui,
+                    self.court.sel_demon,
+                    self.court.tier,
+                    &self.progress,
+                );
             }
             Mode::Run(rs) => {
                 draw_run(eng, gs, rs, m, frame, alpha);
@@ -254,6 +269,12 @@ impl Game for Demonicon {
                 draw_death(eng, &mut frame.ui, *timer, *lost);
             }
         }
-        draw_menu(eng, gs, &self.menu, &mut frame.ui, matches!(self.mode, Mode::Run(_)));
+        draw_menu(
+            eng,
+            gs,
+            &self.menu,
+            &mut frame.ui,
+            matches!(self.mode, Mode::Run(_)),
+        );
     }
 }

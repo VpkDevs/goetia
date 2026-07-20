@@ -23,7 +23,11 @@ pub struct ModSkill {
     pub dmg_mul: f32,
 }
 
-pub fn modify_skill(db: &ContentDb, loadout: &crate::items::Loadout, slot: usize) -> Option<ModSkill> {
+pub fn modify_skill(
+    db: &ContentDb,
+    loadout: &crate::items::Loadout,
+    slot: usize,
+) -> Option<ModSkill> {
     let sid = loadout.skills.get(slot)?.as_ref()?;
     let def = db.skill(sid);
     let mut m = ModSkill {
@@ -71,28 +75,55 @@ pub fn modify_skill(db: &ContentDb, loadout: &crate::items::Loadout, slot: usize
 /// Cast the skill in `slot` toward `aim`. `power` scales damage (echoes cast
 /// at reduced power). `free` skips the cooldown (echo/pending casts).
 pub fn cast(eng: &mut Engine, gs: &mut Gs, slot: usize, power: f32, aim: Vec2, free: bool) {
-    let Some(m) = modify_skill(&gs.db, &gs.loadout, slot) else { return };
+    let Some(m) = modify_skill(&gs.db, &gs.loadout, slot) else {
+        return;
+    };
     if !free {
         if gs.pc.cooldowns[slot] > 0 {
             return;
         }
-        let cast_speed = 1.0 + gs.stat(K_CAST_SPEED) + if gs.pc.frenzy > 0 { gs.pc.frenzy_cast } else { 0.0 };
+        let cast_speed = 1.0
+            + gs.stat(K_CAST_SPEED)
+            + if gs.pc.frenzy > 0 {
+                gs.pc.frenzy_cast
+            } else {
+                0.0
+            };
         gs.pc.cooldowns[slot] = ((m.cd as f32) / cast_speed.max(0.25)) as u16;
     }
-    let ppos = eng.world.get::<Pos>(gs.pc.entity).map(|p| p.0).unwrap_or(Vec2::ZERO);
+    let ppos = eng
+        .world
+        .get::<Pos>(gs.pc.entity)
+        .map(|p| p.0)
+        .unwrap_or(Vec2::ZERO);
     let dir = (aim - ppos).normalize_or_zero();
-    let dir = if dir.length_squared() < 0.5 { Vec2::new(1.0, 0.0) } else { dir };
+    let dir = if dir.length_squared() < 0.5 {
+        Vec2::new(1.0, 0.0)
+    } else {
+        dir
+    };
     let mut dmg = m.dmg;
     for d in &mut dmg {
         *d *= power;
     }
 
     match &m.kind {
-        SkillKind::Projectile { speed, radius, count, spread_deg, pierce, life_ticks } => {
+        SkillKind::Projectile {
+            speed,
+            radius,
+            count,
+            spread_deg,
+            pierce,
+            life_ticks,
+        } => {
             let n = count + m.count_add;
             let speed = speed * m.speed_mul * (1.0 + gs.stat(K_PROJ_SPEED));
             for i in 0..n {
-                let t = if n == 1 { 0.0 } else { i as f32 / (n - 1) as f32 - 0.5 };
+                let t = if n == 1 {
+                    0.0
+                } else {
+                    i as f32 / (n - 1) as f32 - 0.5
+                };
                 let ang = t * spread_deg.to_radians();
                 let (s, c) = ang.sin_cos();
                 let d = Vec2::new(dir.x * c - dir.y * s, dir.x * s + dir.y * c);
@@ -137,13 +168,19 @@ pub fn cast(eng: &mut Engine, gs: &mut Gs, slot: usize, power: f32, aim: Vec2, f
                     ));
                 }
             }
-            eng.audio.play(&gs.sounds.cast, "sfx", 0.3, 1.0 + slot as f32 * 0.07);
+            eng.audio
+                .play(&gs.sounds.cast, "sfx", 0.3, 1.0 + slot as f32 * 0.07);
         }
         SkillKind::Nova { radius } => {
             nova_at(eng, gs, ppos, radius * m.area_mul, dmg, &m.apply, false);
             eng.shake(0.12);
         }
-        SkillKind::Ground { radius, duration_ticks, tick_interval, consecrate } => {
+        SkillKind::Ground {
+            radius,
+            duration_ticks,
+            tick_interval,
+            consecrate,
+        } => {
             eng.world.spawn((
                 Pos(aim),
                 Zone {
@@ -163,7 +200,12 @@ pub fn cast(eng: &mut Engine, gs: &mut Gs, slot: usize, power: f32, aim: Vec2, f
             ));
             eng.audio.play(&gs.sounds.ritual, "sfx", 0.4, 0.9);
         }
-        SkillKind::Minion { count, life_ticks, attack_cd, speed } => {
+        SkillKind::Minion {
+            count,
+            life_ticks,
+            attack_cd,
+            speed,
+        } => {
             let n = count + m.count_add;
             let minion_bonus = 1.0 + gs.stat(K_MINION);
             let mut md = dmg;
@@ -203,7 +245,9 @@ pub fn cast(eng: &mut Engine, gs: &mut Gs, slot: usize, power: f32, aim: Vec2, f
         SkillKind::Curse { radius } => {
             let r = radius * m.area_mul * (1.0 + gs.stat(K_AOE));
             let mut near = Vec::new();
-            eng.world.resource::<SpatialGrid>().query_radius(aim, r, MASK_ENEMY, &mut near);
+            eng.world
+                .resource::<SpatialGrid>()
+                .query_radius(aim, r, MASK_ENEMY, &mut near);
             let total = dmg_total(&dmg).max(4.0);
             for (e, _) in near {
                 for ap in &m.apply {
@@ -213,7 +257,11 @@ pub fn cast(eng: &mut Engine, gs: &mut Gs, slot: usize, power: f32, aim: Vec2, f
             spawn_ring(eng, aim, r, palette::HEX);
             eng.audio.play(&gs.sounds.curse, "sfx", 0.4, 1.1);
         }
-        SkillKind::Totem { duration_ticks, fire_cd, proj_speed } => {
+        SkillKind::Totem {
+            duration_ticks,
+            fire_cd,
+            proj_speed,
+        } => {
             eng.world.spawn((
                 Pos(aim),
                 PrevPos(aim),
@@ -237,8 +285,13 @@ pub fn cast(eng: &mut Engine, gs: &mut Gs, slot: usize, power: f32, aim: Vec2, f
     // Cast accounting: every 5th cast is the vocabulary's "nth cast".
     gs.pc.cast_count += 1;
     gs.pc.last_cast = Some((slot, aim));
-    if gs.pc.cast_count % 5 == 0 {
-        eng.triggers.emit(TR_NTH_CAST, gs.pc.entity, gs.pc.entity, gs.pc.cast_count as f32);
+    if gs.pc.cast_count.is_multiple_of(5) {
+        eng.triggers.emit(
+            TR_NTH_CAST,
+            gs.pc.entity,
+            gs.pc.entity,
+            gs.pc.cast_count as f32,
+        );
         gs.last_player_trigger = Some(TR_NTH_CAST);
     }
     // Echo sigil: queue a weaker recast (echoes count as casts; loops are
@@ -257,15 +310,22 @@ pub fn player_dash(
     applies: &[StatusApply],
     _slot: usize,
 ) {
-    let ppos = eng.world.get::<Pos>(gs.pc.entity).map(|p| p.0).unwrap_or(Vec2::ZERO);
+    let ppos = eng
+        .world
+        .get::<Pos>(gs.pc.entity)
+        .map(|p| p.0)
+        .unwrap_or(Vec2::ZERO);
     let to = crate::run::clamp_walkable(gs, ppos, ppos + dir * dist);
     // Rip through: damage along the path.
     if dmg_total(dmg) > 0.0 {
         let mut near = Vec::new();
         let mid = (ppos + to) * 0.5;
-        eng.world
-            .resource::<SpatialGrid>()
-            .query_radius(mid, dist * 0.6 + 1.0, MASK_ENEMY, &mut near);
+        eng.world.resource::<SpatialGrid>().query_radius(
+            mid,
+            dist * 0.6 + 1.0,
+            MASK_ENEMY,
+            &mut near,
+        );
         for (e, ep) in near {
             // Only those close to the segment.
             let seg = to - ppos;
@@ -288,7 +348,11 @@ pub fn player_dash(
 // ------------------------------------------------------------ tick systems
 
 pub fn tick_projectiles(eng: &mut Engine, gs: &mut Gs) {
-    let ppos = eng.world.get::<Pos>(gs.pc.entity).map(|p| p.0).unwrap_or(Vec2::ZERO);
+    let ppos = eng
+        .world
+        .get::<Pos>(gs.pc.entity)
+        .map(|p| p.0)
+        .unwrap_or(Vec2::ZERO);
     struct Hit {
         proj: Entity,
         target: Entity,
@@ -302,8 +366,8 @@ pub fn tick_projectiles(eng: &mut Engine, gs: &mut Gs) {
     let mut dead: Vec<Entity> = Vec::new();
     {
         let grid = eng.world.remove_resource::<SpatialGrid>().unwrap();
-        eng.world.each::<(&mut Pos, &mut PrevPos, &mut Vel, &mut Proj)>(
-            |ent, (p, pp, v, pr)| {
+        eng.world
+            .each::<(&mut Pos, &mut PrevPos, &mut Vel, &mut Proj)>(|ent, (p, pp, v, pr)| {
                 pp.0 = p.0;
                 pr.life = pr.life.saturating_sub(1);
                 if pr.life == 0 {
@@ -338,8 +402,7 @@ pub fn tick_projectiles(eng: &mut Engine, gs: &mut Gs) {
                         });
                     }
                 }
-            },
-        );
+            });
         eng.world.insert_resource(grid);
     }
     for h in hits {
@@ -418,7 +481,11 @@ pub fn tick_zones(eng: &mut Engine, gs: &mut Gs) {
     for t in ticks {
         if let Some(b) = t.burst {
             // Hostile telegraph pop: damages the player if inside.
-            let pp = eng.world.get::<Pos>(gs.pc.entity).map(|p| p.0).unwrap_or(Vec2::ZERO);
+            let pp = eng
+                .world
+                .get::<Pos>(gs.pc.entity)
+                .map(|p| p.0)
+                .unwrap_or(Vec2::ZERO);
             spawn_ring(eng, t.at, t.radius, palette::BLOOD);
             if !t.friendly && pp.distance(t.at) < t.radius {
                 hit_player(eng, gs, dmg_total(&b), dominant_type(&b), false);
@@ -435,7 +502,11 @@ pub fn tick_zones(eng: &mut Engine, gs: &mut Gs) {
             }
             // Consecration heals its caster standing inside (unless inverted).
             if t.consecrate {
-                let pp = eng.world.get::<Pos>(gs.pc.entity).map(|p| p.0).unwrap_or(Vec2::ZERO);
+                let pp = eng
+                    .world
+                    .get::<Pos>(gs.pc.entity)
+                    .map(|p| p.0)
+                    .unwrap_or(Vec2::ZERO);
                 if pp.distance(t.at) < t.radius {
                     if t.inverted {
                         hit_player(eng, gs, dmg_total(&t.dmg) * 0.4, DmgType::Hex, true);
@@ -464,8 +535,8 @@ pub fn tick_minions_totems(eng: &mut Engine, gs: &mut Gs) {
     let mut dead: Vec<Entity> = Vec::new();
     {
         let grid = eng.world.remove_resource::<SpatialGrid>().unwrap();
-        eng.world.each::<(&mut Pos, &mut Vel, &mut MinionC, &Health)>(
-            |ent, (p, v, m, h)| {
+        eng.world
+            .each::<(&mut Pos, &mut Vel, &mut MinionC, &Health)>(|ent, (p, v, m, h)| {
                 m.life = m.life.saturating_sub(1);
                 if m.life == 0 || h.hp <= 0.0 {
                     dead.push(ent);
@@ -489,13 +560,16 @@ pub fn tick_minions_totems(eng: &mut Engine, gs: &mut Gs) {
                         p.0 += v.0 * FIXED_DT;
                     } else if m.timer == 0 {
                         m.timer = m.attack_cd;
-                        swings.push(Swing { target: tgt, at: tp, dmg: m.dmg });
+                        swings.push(Swing {
+                            target: tgt,
+                            at: tp,
+                            dmg: m.dmg,
+                        });
                     }
                 } else {
                     v.0 = Vec2::ZERO;
                 }
-            },
-        );
+            });
         eng.world.insert_resource(grid);
     }
     for s in swings {
@@ -518,30 +592,31 @@ pub fn tick_minions_totems(eng: &mut Engine, gs: &mut Gs) {
     let mut shots: Vec<Shot> = Vec::new();
     {
         let grid = eng.world.remove_resource::<SpatialGrid>().unwrap();
-        eng.world.each::<(&Pos, &mut TotemC, &Health)>(|ent, (p, t, h)| {
-            t.life = t.life.saturating_sub(1);
-            if t.life == 0 || h.hp <= 0.0 {
-                dead.push(ent);
-                return;
-            }
-            t.timer = t.timer.saturating_sub(1);
-            if t.timer == 0 {
-                let mut near = Vec::new();
-                grid.query_radius(p.0, 14.0, MASK_ENEMY, &mut near);
-                if let Some((_, tp)) = near.first() {
-                    t.timer = t.fire_cd;
-                    shots.push(Shot {
-                        from: p.0,
-                        dir: (*tp - p.0).normalize_or_zero(),
-                        dmg: t.dmg,
-                        speed: t.proj_speed,
-                        slot: t.slot,
-                        power: t.power,
-                        applies: t.apply.clone(),
-                    });
+        eng.world
+            .each::<(&Pos, &mut TotemC, &Health)>(|ent, (p, t, h)| {
+                t.life = t.life.saturating_sub(1);
+                if t.life == 0 || h.hp <= 0.0 {
+                    dead.push(ent);
+                    return;
                 }
-            }
-        });
+                t.timer = t.timer.saturating_sub(1);
+                if t.timer == 0 {
+                    let mut near = Vec::new();
+                    grid.query_radius(p.0, 14.0, MASK_ENEMY, &mut near);
+                    if let Some((_, tp)) = near.first() {
+                        t.timer = t.fire_cd;
+                        shots.push(Shot {
+                            from: p.0,
+                            dir: (*tp - p.0).normalize_or_zero(),
+                            dmg: t.dmg,
+                            speed: t.proj_speed,
+                            slot: t.slot,
+                            power: t.power,
+                            applies: t.apply.clone(),
+                        });
+                    }
+                }
+            });
         eng.world.insert_resource(grid);
     }
     for s in shots {
@@ -581,16 +656,25 @@ pub fn tick_channel(eng: &mut Engine, gs: &mut Gs, held: bool) {
         gs.pc.channel = None;
         return;
     };
-    let SkillKind::Beam { range, width, tick_interval } = m.kind else {
+    let SkillKind::Beam {
+        range,
+        width,
+        tick_interval,
+    } = m.kind
+    else {
         gs.pc.channel = None;
         return;
     };
     gs.pc.channel_tick += 1;
     let interval = ((tick_interval as f32) / (1.0 + gs.stat(K_CAST_SPEED))).max(2.0) as u16;
-    if gs.pc.channel_tick % interval != 0 {
+    if !gs.pc.channel_tick.is_multiple_of(interval) {
         return;
     }
-    let ppos = eng.world.get::<Pos>(gs.pc.entity).map(|p| p.0).unwrap_or(Vec2::ZERO);
+    let ppos = eng
+        .world
+        .get::<Pos>(gs.pc.entity)
+        .map(|p| p.0)
+        .unwrap_or(Vec2::ZERO);
     let dir = (gs.pc.aim - ppos).normalize_or_zero();
     // Sample along the beam; unique targets only.
     let mut seen: Vec<Entity> = Vec::new();
@@ -598,9 +682,12 @@ pub fn tick_channel(eng: &mut Engine, gs: &mut Gs, held: bool) {
     for i in 0..steps {
         let at = ppos + dir * (1.0 + i as f32 * 1.5);
         let mut near = Vec::new();
-        eng.world
-            .resource::<SpatialGrid>()
-            .query_radius(at, width * m.area_mul, MASK_ENEMY, &mut near);
+        eng.world.resource::<SpatialGrid>().query_radius(
+            at,
+            width * m.area_mul,
+            MASK_ENEMY,
+            &mut near,
+        );
         for (e, ep) in near {
             if !seen.contains(&e) {
                 seen.push(e);
@@ -611,8 +698,13 @@ pub fn tick_channel(eng: &mut Engine, gs: &mut Gs, held: bool) {
     // Beam ticks count as casts every 5th — this is a known engine of loops.
     gs.pc.cast_count += 1;
     gs.pc.last_cast = Some((slot, gs.pc.aim));
-    if gs.pc.cast_count % 5 == 0 {
-        eng.triggers.emit(TR_NTH_CAST, gs.pc.entity, gs.pc.entity, gs.pc.cast_count as f32);
+    if gs.pc.cast_count.is_multiple_of(5) {
+        eng.triggers.emit(
+            TR_NTH_CAST,
+            gs.pc.entity,
+            gs.pc.entity,
+            gs.pc.cast_count as f32,
+        );
     }
     eng.audio.play(&gs.sounds.beam, "sfx", 0.08, 1.0);
 }

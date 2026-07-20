@@ -184,7 +184,9 @@ impl Renderer {
     pub fn new(window: Arc<winit::window::Window>, vsync: bool) -> Renderer {
         let size = window.inner_size();
         let instance = wgpu::Instance::new(wgpu::InstanceDescriptor::default());
-        let surface = instance.create_surface(window.clone()).expect("create surface");
+        let surface = instance
+            .create_surface(window.clone())
+            .expect("create surface");
         let adapter = pollster::block_on(instance.request_adapter(&wgpu::RequestAdapterOptions {
             power_preference: wgpu::PowerPreference::HighPerformance,
             compatible_surface: Some(&surface),
@@ -206,8 +208,12 @@ impl Renderer {
         let queue = Arc::new(queue);
 
         let caps = surface.get_capabilities(&adapter);
-        let format =
-            caps.formats.iter().copied().find(|f| f.is_srgb()).unwrap_or(caps.formats[0]);
+        let format = caps
+            .formats
+            .iter()
+            .copied()
+            .find(|f| f.is_srgb())
+            .unwrap_or(caps.formats[0]);
         let config = wgpu::SurfaceConfiguration {
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
             format,
@@ -408,7 +414,8 @@ impl Renderer {
             g.lights_pos_radius[i] = [l.pos.x, l.pos.y, l.pos.z, l.radius];
             g.lights_color_intensity[i] = [l.color.x, l.color.y, l.color.z, l.intensity];
         }
-        self.queue.write_buffer(&self.globals_buf, 0, bytemuck::bytes_of(&g));
+        self.queue
+            .write_buffer(&self.globals_buf, 0, bytemuck::bytes_of(&g));
 
         // ---- instance buffers (grow-only, one per mesh slot)
         while self.instance_bufs.len() < frame.meshes.len() {
@@ -438,7 +445,8 @@ impl Renderer {
                 ib.capacity = cap;
             }
             if !insts.is_empty() {
-                self.queue.write_buffer(&ib.buf, 0, bytemuck::cast_slice(insts));
+                self.queue
+                    .write_buffer(&ib.buf, 0, bytemuck::cast_slice(insts));
             }
         }
 
@@ -503,7 +511,14 @@ impl Renderer {
         self.post.run(&self.queue, &mut enc, &view, frame.bloom);
 
         // ---- UI on top
-        self.ui.render(&self.device, &self.queue, &mut enc, &view, self.size, &frame.ui);
+        self.ui.render(
+            &self.device,
+            &self.queue,
+            &mut enc,
+            &view,
+            self.size,
+            &frame.ui,
+        );
 
         self.queue.submit([enc.finish()]);
         surface_tex.present();

@@ -26,14 +26,22 @@ impl Sound {
         let channels = dec.channels();
         let sample_rate = dec.sample_rate();
         let samples: Vec<f32> = dec.convert_samples().collect();
-        Ok(Sound { channels, sample_rate, samples: samples.into() })
+        Ok(Sound {
+            channels,
+            sample_rate,
+            samples: samples.into(),
+        })
     }
 
     /// Synthesize mono audio from a closure `f(t_seconds) -> sample`.
     pub fn synth(duration: f32, sample_rate: u32, f: impl Fn(f32) -> f32) -> Sound {
         let n = (duration * sample_rate as f32) as usize;
         let samples: Vec<f32> = (0..n).map(|i| f(i as f32 / sample_rate as f32)).collect();
-        Sound { channels: 1, sample_rate, samples: samples.into() }
+        Sound {
+            channels: 1,
+            sample_rate,
+            samples: samples.into(),
+        }
     }
 
     /// Percussive sine blip with exponential decay — projectile fire, UI ticks.
@@ -63,7 +71,11 @@ impl Sound {
                 lp * (1.0 - t).powi(2) * 0.9
             })
             .collect();
-        Sound { channels: 1, sample_rate: sr, samples: samples.into() }
+        Sound {
+            channels: 1,
+            sample_rate: sr,
+            samples: samples.into(),
+        }
     }
 
     fn buffer(&self) -> SamplesBuffer<f32> {
@@ -91,12 +103,22 @@ impl AudioEngine {
                 None
             }
         };
-        AudioEngine { out, buses: HashMap::new(), loops: Vec::new(), master: 1.0 }
+        AudioEngine {
+            out,
+            buses: HashMap::new(),
+            loops: Vec::new(),
+            master: 1.0,
+        }
     }
 
     /// Explicitly silent engine (headless/CI: skips device probing entirely).
     pub fn disabled() -> AudioEngine {
-        AudioEngine { out: None, buses: HashMap::new(), loops: Vec::new(), master: 1.0 }
+        AudioEngine {
+            out: None,
+            buses: HashMap::new(),
+            loops: Vec::new(),
+            master: 1.0,
+        }
     }
 
     pub fn enabled(&self) -> bool {
@@ -127,7 +149,11 @@ impl AudioEngine {
 
     /// Start a looping sound; keep the handle to control or stop it.
     pub fn play_loop(&mut self, sound: &Sound, bus: &str, volume: f32) -> LoopHandle {
-        let idx = self.loops.iter().position(|s| s.is_none()).unwrap_or(self.loops.len());
+        let idx = self
+            .loops
+            .iter()
+            .position(|s| s.is_none())
+            .unwrap_or(self.loops.len());
         let sink = self.out.as_ref().and_then(|(_, handle)| {
             let sink = Sink::try_new(handle).ok()?;
             sink.set_volume(volume * self.bus_volume(bus));

@@ -1,4 +1,12 @@
-# This machine has no MSVC Build Tools; the rustup GNU toolchain links
-# self-contained. Remove this file if you have link.exe and prefer MSVC.
+# Portable pin: `stable` resolves to each host's own toolchain, so this works
+# on Linux/macOS CI *and* on Windows dev machines.
+#
+# Windows note: if your machine has no MSVC Build Tools (no `link.exe`), set the
+# GNU toolchain as your host once — this repo then builds with no further setup:
+#   rustup set default-host x86_64-pc-windows-gnu
+#   scoop install mingw            # provides dlltool + as, needed by raw-dylib crates
+# Previously this file hard-pinned `stable-x86_64-pc-windows-gnu`, which made CI
+# on Linux impossible (rustup cannot install a Windows-host toolchain there).
 [toolchain]
-channel = "stable-x86_64-pc-windows-gnu"
+channel = "stable"
+components = ["rustfmt", "clippy"]

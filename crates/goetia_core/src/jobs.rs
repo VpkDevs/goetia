@@ -28,7 +28,11 @@ impl JobPool {
     /// participates during `scope`).
     pub fn new(threads: usize) -> Self {
         let n = if threads == 0 {
-            std::thread::available_parallelism().map(|p| p.get()).unwrap_or(4).saturating_sub(1).max(1)
+            std::thread::available_parallelism()
+                .map(|p| p.get())
+                .unwrap_or(4)
+                .saturating_sub(1)
+                .max(1)
         } else {
             threads
         };

@@ -48,7 +48,11 @@ fn content_loads_and_validates() {
     assert!(errs.is_empty(), "content errors: {errs:?}");
     assert_eq!(db.skills().len(), 8, "eight skills");
     assert_eq!(db.sigils().len(), 20, "twenty sigils");
-    assert!(db.affixes().len() >= 55, "affix pool ({} found)", db.affixes().len());
+    assert!(
+        db.affixes().len() >= 55,
+        "affix pool ({} found)",
+        db.affixes().len()
+    );
     assert_eq!(db.contracts().len(), 9, "nine contracts");
     assert_eq!(db.goetics().len(), 12, "twelve goetics");
     assert_eq!(db.realms().len(), 3, "three realms");
@@ -121,7 +125,8 @@ fn corruption_awakening_names_things() {
     for i in 0..200 {
         let mut item = gen_item(&db, &mut lt, &mut rng, Rarity::Rare, 3, false);
         let _ = i;
-        if let CorruptOutcome::Awakened = corrupt_item(&db, &mut lt, &mut rng, &mut nrng, &mut item) {
+        if let CorruptOutcome::Awakened = corrupt_item(&db, &mut lt, &mut rng, &mut nrng, &mut item)
+        {
             awakened += 1;
             assert_eq!(item.rarity, Rarity::Goetic);
             assert!(item.lore.as_deref().unwrap_or("").contains("TAKEN FROM"));
@@ -159,15 +164,23 @@ struct HeadlessCtx {
 }
 
 fn run_hash(demon: Demon, seed: u64, ticks: u64) -> u64 {
-    let mut eng = App::run_headless(HeadlessRun { demon, ticks_left: ticks }, seed, ticks);
+    let mut eng = App::run_headless(
+        HeadlessRun {
+            demon,
+            ticks_left: ticks,
+        },
+        seed,
+        ticks,
+    );
     let mut h = StateHasher::new();
     h.write_u64(eng.clock.tick);
-    eng.world.each::<(&Pos, &Health, &EnemyC)>(|ent, (p, hp, ec)| {
-        h.write_u64(ent.to_bits());
-        h.write_vec2(p.0.x, p.0.y);
-        h.write_f32(hp.hp);
-        h.write_u32(ec.timer as u32);
-    });
+    eng.world
+        .each::<(&Pos, &Health, &EnemyC)>(|ent, (p, hp, ec)| {
+            h.write_u64(ent.to_bits());
+            h.write_vec2(p.0.x, p.0.y);
+            h.write_f32(hp.hp);
+            h.write_u32(ec.timer as u32);
+        });
     let ctx = eng.world.remove_resource::<HeadlessCtx>().unwrap();
     h.write_u64(ctx.rs.layout.hash());
     h.finish()
@@ -196,13 +209,16 @@ fn trigger_loop_is_contained_by_budget() {
         magnitude_floor: 0.0,
     };
     let mut gs = make_gs();
-    gs.build.reactions = vec![
-        Reaction {
-            on: "on_status_apply".into(),
-            chance: 1.0,
-            action: Action::ApplyStatus { status: "ignite".into(), stacks: 1, magnitude: 0.1, radius: 0.0 },
+    gs.build.reactions = vec![Reaction {
+        on: "on_status_apply".into(),
+        chance: 1.0,
+        action: Action::ApplyStatus {
+            status: "ignite".into(),
+            stacks: 1,
+            magnitude: 0.1,
+            radius: 0.0,
         },
-    ];
+    }];
     eng.world.insert_resource(SpatialGrid::new(2.0));
     eng.world.insert_resource(demonicon::fx::FxQueue::default());
     let dummy = eng.world.spawn((
@@ -210,7 +226,9 @@ fn trigger_loop_is_contained_by_budget() {
         Health::new(1_000_000.0),
         StatusBag::new(),
     ));
-    gs.pc.entity = eng.world.spawn((Pos(glam::Vec2::ONE), Health::new(100.0), StatusBag::new()));
+    gs.pc.entity = eng
+        .world
+        .spawn((Pos(glam::Vec2::ONE), Health::new(100.0), StatusBag::new()));
     // Prime the pump: applying ignite emits on_status_apply, whose reaction
     // applies ignite, which emits on_status_apply...
     for _ in 0..10 {
@@ -263,9 +281,22 @@ fn boss_kill_clears_run_and_showers_loot() {
                 if let Some(h) = eng.world.get_mut::<Health>(ctx.gs.pc.entity) {
                     h.hp = h.max;
                 }
-                let at = eng.world.get::<Pos>(boss).map(|p| p.0).unwrap_or(glam::Vec2::ZERO);
+                let at = eng
+                    .world
+                    .get::<Pos>(boss)
+                    .map(|p| p.0)
+                    .unwrap_or(glam::Vec2::ZERO);
                 let before = eng.world.get::<Health>(boss).map(|h| h.hp).unwrap_or(0.0);
-                let r = hit_enemy(eng, &mut ctx.gs, boss, at, [120.0, 120.0, 0.0, 0.0], &[], false, false);
+                let r = hit_enemy(
+                    eng,
+                    &mut ctx.gs,
+                    boss,
+                    at,
+                    [120.0, 120.0, 0.0, 0.0],
+                    &[],
+                    false,
+                    false,
+                );
                 let after = eng.world.get::<Health>(boss).map(|h| h.hp).unwrap_or(0.0);
                 if self.demon == Demon::Buer && !ctx.gs.blight_phase {
                     // Bloom: the wheel must be immune (the phase gate is real).
@@ -284,7 +315,11 @@ fn boss_kill_clears_run_and_showers_loot() {
         let mut eng = App::run_headless(BossSlayer { demon, done: false }, 0xB055, 2400);
         let ctx = eng.world.remove_resource::<HeadlessCtx>().unwrap();
         assert!(ctx.rs.cleared, "{}: boss never fell", demon.name());
-        assert!(ctx.rs.portal_out.is_some(), "{}: no exit portal", demon.name());
+        assert!(
+            ctx.rs.portal_out.is_some(),
+            "{}: no exit portal",
+            demon.name()
+        );
         let mut drops = 0;
         let mut items = 0;
         eng.world.each::<(&LootDrop,)>(|_, (l,)| {
@@ -293,7 +328,11 @@ fn boss_kill_clears_run_and_showers_loot() {
                 items += 1;
             }
         });
-        assert!(items >= 5, "{}: boss shower too dry ({items} items, {drops} drops)", demon.name());
+        assert!(
+            items >= 5,
+            "{}: boss shower too dry ({items} items, {drops} drops)",
+            demon.name()
+        );
     }
 }
 
@@ -306,6 +345,11 @@ fn same_seed_same_realm_layout() {
         let a = assemble(&t, &g, &mut Pcg32::new(99, 1)).unwrap();
         let b = assemble(&t, &g, &mut Pcg32::new(99, 1)).unwrap();
         assert_eq!(a.hash(), b.hash(), "{} layout diverged", demon.name());
-        assert!(a.rooms.len() >= 8, "{} too small: {}", demon.name(), a.rooms.len());
+        assert!(
+            a.rooms.len() >= 8,
+            "{} too small: {}",
+            demon.name(),
+            a.rooms.len()
+        );
     }
 }

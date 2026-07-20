@@ -1,3 +1,14 @@
+# Build output
 /target
+
+# Player save data (per-machine, never shared)
 demonicon/saves/
-*.png
+
+# Local screenshots / capture scratch (docs images live in docs/ if ever added)
+/screenshots/
+*.tmp
+
+# Editor / OS noise
+.DS_Store
+Thumbs.db
+*.swp

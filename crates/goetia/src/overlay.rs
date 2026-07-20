@@ -98,9 +98,17 @@ impl Overlay {
         // Frame graph: 120 bars, 20ms = full height red line.
         let gw = 340.0;
         let gh = 48.0;
-        ui.rect(Vec2::new(x, y), Vec2::new(gw, gh), Vec4::new(0.0, 0.0, 0.0, 0.5));
-        let budget_y = y + gh - (16.67 / 33.3) * gh as f32;
-        ui.rect(Vec2::new(x, budget_y), Vec2::new(gw, 1.0), Vec4::new(0.3, 0.9, 0.4, 0.7));
+        ui.rect(
+            Vec2::new(x, y),
+            Vec2::new(gw, gh),
+            Vec4::new(0.0, 0.0, 0.0, 0.5),
+        );
+        let budget_y = y + gh - (16.67 / 33.3) * gh;
+        ui.rect(
+            Vec2::new(x, budget_y),
+            Vec2::new(gw, 1.0),
+            Vec4::new(0.3, 0.9, 0.4, 0.7),
+        );
         let bars = 120usize;
         let bw = gw / bars as f32;
         for i in 0..bars {
@@ -114,7 +122,11 @@ impl Overlay {
             } else {
                 Vec4::new(0.4, 0.8, 0.5, 0.8)
             };
-            ui.rect(Vec2::new(x + i as f32 * bw, y + gh - h), Vec2::new(bw - 1.0, h), c);
+            ui.rect(
+                Vec2::new(x + i as f32 * bw, y + gh - h),
+                Vec2::new(bw - 1.0, h),
+                c,
+            );
         }
         y += gh + 10.0;
 
@@ -123,9 +135,20 @@ impl Overlay {
             *y += line;
         };
 
-        text(format!("TICK {tick}   WORST {worst:5.2}MS   >20MS: {}", self.frames_over_20ms), dim, &mut y);
+        text(
+            format!(
+                "TICK {tick}   WORST {worst:5.2}MS   >20MS: {}",
+                self.frames_over_20ms
+            ),
+            dim,
+            &mut y,
+        );
         let (entities, archs) = &world_stats;
-        text(format!("ENTITIES {entities}   ARCHETYPES {}", archs.len()), fg, &mut y);
+        text(
+            format!("ENTITIES {entities}   ARCHETYPES {}", archs.len()),
+            fg,
+            &mut y,
+        );
         let mut arch_line = String::from("  ");
         for (comps, count) in archs.iter().take(6) {
             arch_line.push_str(&format!("[{comps}C:{count}] "));
@@ -144,18 +167,28 @@ impl Overlay {
         );
         if let Some(t) = trigger_stats {
             text(
-                format!("TRIGGERS: {}/TICK  DEPTH {}  PEND->DROP {}", t.last_tick_processed, t.max_depth_seen, t.dropped_budget),
+                format!(
+                    "TRIGGERS: {}/TICK  DEPTH {}  PEND->DROP {}",
+                    t.last_tick_processed, t.max_depth_seen, t.dropped_budget
+                ),
                 if t.dropped_budget > 0 { warn } else { fg },
                 &mut y,
             );
             text(
-                format!("  EMIT {}  PROC {}  BUDGET-HITS {}", t.emitted, t.processed, t.budget_hit_ticks),
+                format!(
+                    "  EMIT {}  PROC {}  BUDGET-HITS {}",
+                    t.emitted, t.processed, t.budget_hit_ticks
+                ),
                 dim,
                 &mut y,
             );
         }
         for (name, us) in timings.iter().take(8) {
-            text(format!("  {name:<18} {:6.2}MS", *us as f32 / 1000.0), dim, &mut y);
+            text(
+                format!("  {name:<18} {:6.2}MS", *us as f32 / 1000.0),
+                dim,
+                &mut y,
+            );
         }
         for l in &self.lines {
             text(l.clone(), fg, &mut y);

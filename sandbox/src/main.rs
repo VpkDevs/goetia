@@ -11,7 +11,7 @@
 use glam::{Mat4, Quat, Vec2, Vec3, Vec4};
 use goetia::prelude::*;
 use sandbox::horde::{self, FxQueue, FIRE_PER_TICK};
-use sandbox::{Corpse, Enemy, Pos, PrevPos, Projectile, Vel, AiState};
+use sandbox::{AiState, Corpse, Enemy, Pos, PrevPos, Projectile, Vel};
 use std::env;
 
 fn main() {
@@ -126,7 +126,10 @@ fn run_proc_chain_headless() {
     println!("  dropped_budget:   {}", s.dropped_budget);
     println!("  budget_hit_ticks: {}", s.budget_hit_ticks);
     println!("  max_depth_seen:   {}", s.max_depth_seen);
-    assert!(s.budget_hit_ticks > 0, "budget never hit — loop not exploding");
+    assert!(
+        s.budget_hit_ticks > 0,
+        "budget never hit — loop not exploding"
+    );
     assert_eq!(eng.triggers.pending(), 0, "queue leaked across ticks");
     println!("PASS — budget contained the infinite loop");
 }
@@ -258,12 +261,9 @@ impl SandboxGame {
         for i in 0..64 {
             let a = i as f32 / 64.0 * std::f32::consts::TAU;
             let p = Vec2::new(a.cos(), a.sin()) * 8.0;
-            let e = eng.world.spawn((
-                Pos(p),
-                PrevPos(p),
-                Vel(Vec2::ZERO),
-                StatusBag::new(),
-            ));
+            let e = eng
+                .world
+                .spawn((Pos(p), PrevPos(p), Vel(Vec2::ZERO), StatusBag::new()));
             self.dummy_entities.push(e);
         }
         eng.camera.zoom = 18.0;
@@ -315,7 +315,12 @@ impl SandboxGame {
             Pos(flat * 0.9),
             PrevPos(flat * 0.9),
             Vel(flat * 22.0),
-            Projectile { life: 180, radius: 0.25, glow: true, ..Default::default() },
+            Projectile {
+                life: 180,
+                radius: 0.25,
+                glow: true,
+                ..Default::default()
+            },
         ));
 
         eng.hitstop(0.045);
@@ -328,20 +333,20 @@ impl SandboxGame {
         );
 
         if let Some(s) = &self.sfx_fire {
-            eng.audio.play(s, "sfx", 0.7, 0.95 + (eng.clock.tick % 7) as f32 * 0.02);
+            eng.audio
+                .play(s, "sfx", 0.7, 0.95 + (eng.clock.tick % 7) as f32 * 0.02);
         }
     }
 
     fn tick_proc_chain(&mut self, eng: &mut Engine) {
         // Every 4 ticks, seed a kill that deliberately loops through the vocab.
-        if eng.clock.tick % 4 == 0 {
+        if eng.clock.tick.is_multiple_of(4) {
             let src = self
                 .dummy_entities
                 .get((eng.clock.tick as usize / 4) % self.dummy_entities.len().max(1))
                 .copied()
                 .unwrap_or(Entity::DEAD);
-            eng.triggers
-                .emit(TriggerKind::of("on_kill"), src, src, 4.0);
+            eng.triggers.emit(TriggerKind::of("on_kill"), src, src, 4.0);
         }
 
         // Status lifecycle on a rotating subset.
@@ -366,13 +371,25 @@ impl SandboxGame {
                     eng.triggers
                         .emit(TriggerKind::of("on_status_apply"), entity, entity, 1.0);
                 }
-                StatusEvent::Ticked { entity, magnitude, .. } => {
-                    eng.triggers
-                        .emit(TriggerKind::of("on_status_detonate"), entity, entity, magnitude);
+                StatusEvent::Ticked {
+                    entity, magnitude, ..
+                } => {
+                    eng.triggers.emit(
+                        TriggerKind::of("on_status_detonate"),
+                        entity,
+                        entity,
+                        magnitude,
+                    );
                 }
-                StatusEvent::Detonated { entity, magnitude, .. } => {
-                    eng.triggers
-                        .emit(TriggerKind::of("on_status_detonate"), entity, entity, magnitude * 2.0);
+                StatusEvent::Detonated {
+                    entity, magnitude, ..
+                } => {
+                    eng.triggers.emit(
+                        TriggerKind::of("on_status_detonate"),
+                        entity,
+                        entity,
+                        magnitude * 2.0,
+                    );
                 }
                 StatusEvent::Expired { entity, .. } => {
                     eng.triggers
@@ -387,9 +404,8 @@ impl SandboxGame {
                 TriggerKind::of("on_status_apply")
             } else if ev.kind == TriggerKind::of("on_status_apply") {
                 TriggerKind::of("on_crit")
-            } else if ev.kind == TriggerKind::of("on_crit") {
-                TriggerKind::of("on_kill")
             } else {
+                // on_crit (and anything else) closes the cycle back to on_kill.
                 TriggerKind::of("on_kill")
             };
             em.emit(next, ev.source, ev.target, ev.magnitude);
@@ -397,7 +413,7 @@ impl SandboxGame {
         });
 
         // Orbit the dummies so the scene isn't static.
-        let t = eng.clock.tick as f32 * FIXED_DT as f32;
+        let t = eng.clock.tick as f32 * FIXED_DT;
         eng.world.each::<(&mut Pos, &mut PrevPos)>(|_, (p, pp)| {
             pp.0 = p.0;
             let a = p.0.y.atan2(p.0.x) + 0.01;
@@ -409,17 +425,27 @@ impl SandboxGame {
 
     fn tick_realm(&mut self, eng: &mut Engine) {
         // Slow camera orbit over the assembled realm.
-        let t = eng.clock.tick as f32 * FIXED_DT as f32 * 0.15;
+        let t = eng.clock.tick as f32 * FIXED_DT * 0.15;
         let r = 18.0;
         eng.camera.target = Vec3::new(t.cos() * r, 0.0, t.sin() * r * 0.7);
     }
 
     fn extract_horde(&mut self, eng: &mut Engine, frame: &mut FrameSubmit, alpha: f32) {
-        let Some(mesh_enemy) = self.mesh_enemy else { return };
-        let Some(mesh_proj) = self.mesh_proj else { return };
-        let Some(mesh_corpse) = self.mesh_corpse else { return };
-        let Some(mesh_ground) = self.mesh_ground else { return };
-        let Some(mesh_turret) = self.mesh_turret else { return };
+        let Some(mesh_enemy) = self.mesh_enemy else {
+            return;
+        };
+        let Some(mesh_proj) = self.mesh_proj else {
+            return;
+        };
+        let Some(mesh_corpse) = self.mesh_corpse else {
+            return;
+        };
+        let Some(mesh_ground) = self.mesh_ground else {
+            return;
+        };
+        let Some(mesh_turret) = self.mesh_turret else {
+            return;
+        };
 
         // Ground
         frame.meshes.push((
@@ -482,29 +508,30 @@ impl SandboxGame {
 
         // Projectiles + lights
         let mut proj_inst = Vec::with_capacity(3200);
-        eng.world.each::<(&Pos, &PrevPos, &Projectile)>(|_, (p, pp, pr)| {
-            let pos = pp.0.lerp(p.0, alpha);
-            let world = Vec3::new(pos.x, 0.5, pos.y);
-            proj_inst.push(
-                InstanceRaw::new(
-                    Mat4::from_scale_rotation_translation(
-                        Vec3::splat(0.35),
-                        Quat::IDENTITY,
-                        world,
-                    ),
-                    Vec4::new(1.0, 0.7, 0.3, 1.0),
-                )
-                .emissive(palette::BRIMSTONE, 3.0),
-            );
-            if pr.glow || proj_inst.len() % 60 == 0 {
-                frame.lights.push(Light {
-                    pos: world,
-                    color: palette::BRIMSTONE,
-                    radius: 4.5,
-                    intensity: 2.2,
-                });
-            }
-        });
+        eng.world
+            .each::<(&Pos, &PrevPos, &Projectile)>(|_, (p, pp, pr)| {
+                let pos = pp.0.lerp(p.0, alpha);
+                let world = Vec3::new(pos.x, 0.5, pos.y);
+                proj_inst.push(
+                    InstanceRaw::new(
+                        Mat4::from_scale_rotation_translation(
+                            Vec3::splat(0.35),
+                            Quat::IDENTITY,
+                            world,
+                        ),
+                        Vec4::new(1.0, 0.7, 0.3, 1.0),
+                    )
+                    .emissive(palette::BRIMSTONE, 3.0),
+                );
+                if pr.glow || proj_inst.len() % 60 == 0 {
+                    frame.lights.push(Light {
+                        pos: world,
+                        color: palette::BRIMSTONE,
+                        radius: 4.5,
+                        intensity: 2.2,
+                    });
+                }
+            });
         // Keep ~50 lights even when glow is sparse.
         if frame.lights.len() < 50 {
             let need = 50 - frame.lights.len();
@@ -563,12 +590,8 @@ impl SandboxGame {
                 drag: 1.2,
             });
             if strength >= 3.0 {
-                eng.floaters.spawn(
-                    world + Vec3::Y,
-                    "KILL",
-                    Vec4::new(1.0, 0.4, 0.15, 1.0),
-                    2.0,
-                );
+                eng.floaters
+                    .spawn(world + Vec3::Y, "KILL", Vec4::new(1.0, 0.4, 0.15, 1.0), 2.0);
                 eng.shake(0.12);
                 if let Some(s) = &self.sfx_hit {
                     eng.audio.play(s, "sfx", 0.45, 0.9);
@@ -584,7 +607,7 @@ impl SandboxGame {
         }
 
         // Steady particle ambient (~3k/frame → ~200k live at 0.6s life)
-        if eng.clock.tick % 2 == 0 {
+        if eng.clock.tick.is_multiple_of(2) {
             frame.particle_spawns.push(ParticleSpawn {
                 pos: Vec3::new(0.0, 0.5, 0.0),
                 count: 2800,
@@ -613,8 +636,12 @@ impl SandboxGame {
     }
 
     fn extract_proc_chain(&mut self, eng: &mut Engine, frame: &mut FrameSubmit, alpha: f32) {
-        let Some(mesh_enemy) = self.mesh_enemy else { return };
-        let Some(mesh_ground) = self.mesh_ground else { return };
+        let Some(mesh_enemy) = self.mesh_enemy else {
+            return;
+        };
+        let Some(mesh_ground) = self.mesh_ground else {
+            return;
+        };
 
         frame.meshes.push((
             mesh_ground,
@@ -625,45 +652,47 @@ impl SandboxGame {
         ));
 
         let mut inst = Vec::new();
-        eng.world.each::<(&Pos, &PrevPos, &StatusBag)>(|_, (p, pp, bag)| {
-            let pos = pp.0.lerp(p.0, alpha);
-            let stacks = bag.stacks(StatusId::of("ignite"));
-            let heat = (stacks as f32 / 8.0).clamp(0.0, 1.0);
-            inst.push(
-                InstanceRaw::new(
-                    Mat4::from_translation(Vec3::new(pos.x, 0.0, pos.y)),
-                    Vec4::new(0.3 + heat * 0.7, 0.15, 0.4, 1.0),
-                )
-                .emissive(palette::HEX, 0.5 + heat * 3.0)
-                .wobble(0.08, 4.0),
-            );
-            if stacks > 0 {
-                frame.lights.push(Light {
-                    pos: Vec3::new(pos.x, 1.0, pos.y),
-                    color: palette::HEX,
-                    radius: 3.0 + heat * 2.0,
-                    intensity: 1.0 + heat,
-                });
-            }
-        });
+        eng.world
+            .each::<(&Pos, &PrevPos, &StatusBag)>(|_, (p, pp, bag)| {
+                let pos = pp.0.lerp(p.0, alpha);
+                let stacks = bag.stacks(StatusId::of("ignite"));
+                let heat = (stacks as f32 / 8.0).clamp(0.0, 1.0);
+                inst.push(
+                    InstanceRaw::new(
+                        Mat4::from_translation(Vec3::new(pos.x, 0.0, pos.y)),
+                        Vec4::new(0.3 + heat * 0.7, 0.15, 0.4, 1.0),
+                    )
+                    .emissive(palette::HEX, 0.5 + heat * 3.0)
+                    .wobble(0.08, 4.0),
+                );
+                if stacks > 0 {
+                    frame.lights.push(Light {
+                        pos: Vec3::new(pos.x, 1.0, pos.y),
+                        color: palette::HEX,
+                        radius: 3.0 + heat * 2.0,
+                        intensity: 1.0 + heat,
+                    });
+                }
+            });
         frame.meshes.push((mesh_enemy, inst));
 
         // Visualize budget pressure with a particle burst when budget hits.
-        if eng.triggers.stats.budget_hit_ticks > 0 && eng.triggers.stats.last_tick_processed > 0 {
-            if eng.clock.tick % 8 == 0 {
-                frame.particle_spawns.push(ParticleSpawn {
-                    pos: Vec3::Y * 1.5,
-                    count: 400,
-                    vel: Vec3::Y * 3.0,
-                    spread: 8.0,
-                    color_from: Vec4::new(0.9, 0.2, 1.0, 1.0),
-                    color_to: Vec4::new(0.2, 0.0, 0.4, 0.0),
-                    size: (0.04, 0.12),
-                    life: (0.3, 0.8),
-                    gravity: 4.0,
-                    drag: 1.0,
-                });
-            }
+        if eng.triggers.stats.budget_hit_ticks > 0
+            && eng.triggers.stats.last_tick_processed > 0
+            && eng.clock.tick.is_multiple_of(8)
+        {
+            frame.particle_spawns.push(ParticleSpawn {
+                pos: Vec3::Y * 1.5,
+                count: 400,
+                vel: Vec3::Y * 3.0,
+                spread: 8.0,
+                color_from: Vec4::new(0.9, 0.2, 1.0, 1.0),
+                color_to: Vec4::new(0.2, 0.0, 0.4, 0.0),
+                size: (0.04, 0.12),
+                life: (0.3, 0.8),
+                gravity: 4.0,
+                drag: 1.0,
+            });
         }
 
         frame.ambient = Vec3::new(0.07, 0.05, 0.12);
@@ -677,8 +706,12 @@ impl SandboxGame {
     }
 
     fn extract_realm(&mut self, eng: &mut Engine, frame: &mut FrameSubmit, _alpha: f32) {
-        let Some(mesh_room) = self.mesh_room else { return };
-        let Some(mesh_column) = self.mesh_column else { return };
+        let Some(mesh_room) = self.mesh_room else {
+            return;
+        };
+        let Some(mesh_column) = self.mesh_column else {
+            return;
+        };
         let Some(layout) = &self.realm else { return };
 
         const CELL: f32 = 3.5;
@@ -776,26 +809,28 @@ impl SandboxGame {
 impl Game for SandboxGame {
     fn init(&mut self, eng: &mut Engine, gfx: Option<&mut Renderer>) {
         if let Some(r) = gfx {
-            self.mesh_enemy = Some(r.register_mesh(
-                MeshBuilder::prism(5, 0.45, 1.1)
-                    .tapered(0.55)
-                    .jittered(0.04)
-                    .merged(MeshBuilder::spike(0.7).translated(Vec3::Y * 1.0)),
-            ));
+            self.mesh_enemy = Some(
+                r.register_mesh(
+                    MeshBuilder::prism(5, 0.45, 1.1)
+                        .tapered(0.55)
+                        .jittered(0.04)
+                        .merged(MeshBuilder::spike(0.7).translated(Vec3::Y * 1.0)),
+                ),
+            );
             self.mesh_proj = Some(r.register_mesh(MeshBuilder::orb(2, 0.5)));
-            self.mesh_corpse = Some(r.register_mesh(
-                MeshBuilder::prism(4, 0.5, 0.35).jittered(0.08),
-            ));
+            self.mesh_corpse =
+                Some(r.register_mesh(MeshBuilder::prism(4, 0.5, 0.35).jittered(0.08)));
             self.mesh_ground = Some(r.register_mesh(MeshBuilder::ground(60.0, 60.0)));
-            self.mesh_turret = Some(r.register_mesh(
-                MeshBuilder::column(1.6)
-                    .twisted(0.15)
-                    .merged(MeshBuilder::orb(3, 0.55).translated(Vec3::Y * 1.7)),
-            ));
+            self.mesh_turret = Some(
+                r.register_mesh(
+                    MeshBuilder::column(1.6)
+                        .twisted(0.15)
+                        .merged(MeshBuilder::orb(3, 0.55).translated(Vec3::Y * 1.7)),
+                ),
+            );
             self.mesh_room = Some(r.register_mesh(MeshBuilder::cube()));
-            self.mesh_column = Some(r.register_mesh(
-                MeshBuilder::column(2.4).twisted(0.08).obsidian_ish(),
-            ));
+            self.mesh_column =
+                Some(r.register_mesh(MeshBuilder::column(2.4).twisted(0.08).obsidian_ish()));
         }
 
         self.sfx_fire = Some(Sound::blip(440.0, 0.06));
@@ -843,7 +878,9 @@ impl Game for SandboxGame {
             SceneMode::ProcChain => "PROC-CHAIN",
             SceneMode::Realm => "REALM",
         };
-        eng.overlay.lines.push(format!("scene: {mode_name}  [1/2/3]"));
+        eng.overlay
+            .lines
+            .push(format!("scene: {mode_name}  [1/2/3]"));
         match self.mode {
             SceneMode::Horde => {
                 let mut n_e = 0usize;
@@ -855,7 +892,9 @@ impl Game for SandboxGame {
                 eng.overlay.lines.push(format!(
                     "enemies {n_e}  projectiles {n_p}  corpses {n_c}  fire/tick {FIRE_PER_TICK}"
                 ));
-                eng.overlay.lines.push("LMB: feel-shot (hitstop+shake+bloom+sfx)".into());
+                eng.overlay
+                    .lines
+                    .push("LMB: feel-shot (hitstop+shake+bloom+sfx)".into());
             }
             SceneMode::ProcChain => {
                 let s = eng.triggers.stats;
@@ -865,7 +904,9 @@ impl Game for SandboxGame {
                 ));
                 eng.overlay.lines.push(format!(
                     "max_depth {}  last_tick {}  pending {}",
-                    s.max_depth_seen, s.last_tick_processed, eng.triggers.pending()
+                    s.max_depth_seen,
+                    s.last_tick_processed,
+                    eng.triggers.pending()
                 ));
             }
             SceneMode::Realm => {
@@ -915,10 +956,22 @@ fn dummy_room_templates() -> Vec<RoomTemplate> {
             4,
             4,
             vec![
-                Door { side: Side::North, offset: 1 },
-                Door { side: Side::South, offset: 2 },
-                Door { side: Side::East, offset: 1 },
-                Door { side: Side::West, offset: 2 },
+                Door {
+                    side: Side::North,
+                    offset: 1,
+                },
+                Door {
+                    side: Side::South,
+                    offset: 2,
+                },
+                Door {
+                    side: Side::East,
+                    offset: 1,
+                },
+                Door {
+                    side: Side::West,
+                    offset: 2,
+                },
             ],
             &["hub"],
             1.0,
@@ -928,8 +981,14 @@ fn dummy_room_templates() -> Vec<RoomTemplate> {
             2,
             5,
             vec![
-                Door { side: Side::North, offset: 0 },
-                Door { side: Side::South, offset: 1 },
+                Door {
+                    side: Side::North,
+                    offset: 0,
+                },
+                Door {
+                    side: Side::South,
+                    offset: 1,
+                },
             ],
             &["corridor"],
             1.4,
@@ -939,8 +998,14 @@ fn dummy_room_templates() -> Vec<RoomTemplate> {
             5,
             2,
             vec![
-                Door { side: Side::East, offset: 0 },
-                Door { side: Side::West, offset: 1 },
+                Door {
+                    side: Side::East,
+                    offset: 0,
+                },
+                Door {
+                    side: Side::West,
+                    offset: 1,
+                },
             ],
             &["corridor"],
             1.4,
@@ -950,8 +1015,14 @@ fn dummy_room_templates() -> Vec<RoomTemplate> {
             3,
             3,
             vec![
-                Door { side: Side::North, offset: 1 },
-                Door { side: Side::West, offset: 1 },
+                Door {
+                    side: Side::North,
+                    offset: 1,
+                },
+                Door {
+                    side: Side::West,
+                    offset: 1,
+                },
             ],
             &["combat"],
             1.0,
@@ -960,7 +1031,10 @@ fn dummy_room_templates() -> Vec<RoomTemplate> {
             "vault",
             3,
             2,
-            vec![Door { side: Side::South, offset: 1 }],
+            vec![Door {
+                side: Side::South,
+                offset: 1,
+            }],
             &["loot"],
             0.7,
         ),
@@ -969,10 +1043,22 @@ fn dummy_room_templates() -> Vec<RoomTemplate> {
             3,
             3,
             vec![
-                Door { side: Side::North, offset: 1 },
-                Door { side: Side::South, offset: 1 },
-                Door { side: Side::East, offset: 1 },
-                Door { side: Side::West, offset: 1 },
+                Door {
+                    side: Side::North,
+                    offset: 1,
+                },
+                Door {
+                    side: Side::South,
+                    offset: 1,
+                },
+                Door {
+                    side: Side::East,
+                    offset: 1,
+                },
+                Door {
+                    side: Side::West,
+                    offset: 1,
+                },
             ],
             &["hub", "combat"],
             1.1,

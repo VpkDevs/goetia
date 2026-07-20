@@ -16,5 +16,8 @@ fn horde_10k_ticks_bit_identical() {
 fn different_seeds_diverge() {
     let a = run_headless_horde(1, 500);
     let b = run_headless_horde(2, 500);
-    assert_ne!(a, b, "different seeds produced identical worlds (hash collision or dead RNG)");
+    assert_ne!(
+        a, b,
+        "different seeds produced identical worlds (hash collision or dead RNG)"
+    );
 }

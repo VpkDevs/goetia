@@ -55,11 +55,21 @@ pub struct LootTables {
 
 impl Default for LootTables {
     fn default() -> Self {
-        LootTables { rare_misses: 0, goetic_misses: 0, next_uid: 1 }
+        LootTables {
+            rare_misses: 0,
+            goetic_misses: 0,
+            next_uid: 1,
+        }
     }
 }
 
-const SLOT_POOL: [Slot; 5] = [Slot::Weapon, Slot::Armor, Slot::Relic, Slot::Ring, Slot::Ring];
+const SLOT_POOL: [Slot; 5] = [
+    Slot::Weapon,
+    Slot::Armor,
+    Slot::Relic,
+    Slot::Ring,
+    Slot::Ring,
+];
 
 pub fn roll_rarity(lt: &mut LootTables, rng: &mut Pcg32, rare_bonus: f32) -> Rarity {
     // Base weights with pity ramps (streak-breakers per the engine tables).
@@ -67,7 +77,9 @@ pub fn roll_rarity(lt: &mut LootTables, rng: &mut Pcg32, rare_bonus: f32) -> Rar
     let w_magic = 34.0;
     let w_rare = (9.0 + lt.rare_misses as f32 * 0.9) * (1.0 + rare_bonus);
     let w_goetic = (0.7 + lt.goetic_misses as f32 * 0.12) * (1.0 + rare_bonus);
-    let pick = rng.weighted_index(&[w_common, w_magic, w_rare, w_goetic]).unwrap_or(0);
+    let pick = rng
+        .weighted_index(&[w_common, w_magic, w_rare, w_goetic])
+        .unwrap_or(0);
     match pick {
         3 => {
             lt.goetic_misses = 0;
@@ -82,17 +94,16 @@ pub fn roll_rarity(lt: &mut LootTables, rng: &mut Pcg32, rare_bonus: f32) -> Rar
         n => {
             lt.rare_misses += 1;
             lt.goetic_misses += 1;
-            if n == 1 { Rarity::Magic } else { Rarity::Common }
+            if n == 1 {
+                Rarity::Magic
+            } else {
+                Rarity::Common
+            }
         }
     }
 }
 
-fn affix_pool<'a>(
-    db: &'a ContentDb,
-    slot: Slot,
-    hidden: bool,
-    allow_corrupt: bool,
-) -> Vec<&'a AffixDef> {
+fn affix_pool(db: &ContentDb, slot: Slot, hidden: bool, allow_corrupt: bool) -> Vec<&AffixDef> {
     db.affixes()
         .iter()
         .filter(|a| a.slots.contains(&slot))
@@ -144,8 +155,7 @@ pub fn gen_item(
     lt.next_uid += 1;
 
     if rarity == Rarity::Goetic {
-        let candidates: Vec<&GoeticDef> =
-            db.goetics().iter().filter(|g| g.slot == slot).collect();
+        let candidates: Vec<&GoeticDef> = db.goetics().iter().filter(|g| g.slot == slot).collect();
         let all: Vec<&GoeticDef> = if candidates.is_empty() {
             db.goetics().iter().collect()
         } else {
@@ -178,7 +188,12 @@ pub fn gen_item(
     for _ in 0..n_affixes {
         if let Some(a) = roll_affix(&pool, rng, false) {
             // No duplicate stat spam: cap identical defs at 2.
-            if affixes.iter().filter(|x: &&AffixRoll| x.def_id == a.def_id).count() < 2 {
+            if affixes
+                .iter()
+                .filter(|x: &&AffixRoll| x.def_id == a.def_id)
+                .count()
+                < 2
+            {
                 affixes.push(a);
             }
         }
@@ -261,7 +276,11 @@ pub fn corrupt_item(
     item.awakened = true;
     let n = db.naming();
     let pick = |v: &Vec<String>, r: &mut Pcg32| v[r.range_u32(v.len() as u32) as usize].clone();
-    item.name = format!("{} {}", pick(&n.adjectives, naming_rng), pick(&n.nouns, naming_rng));
+    item.name = format!(
+        "{} {}",
+        pick(&n.adjectives, naming_rng),
+        pick(&n.nouns, naming_rng)
+    );
     item.lore = Some(format!(
         "TAKEN FROM {} WHO {}",
         pick(&n.sources, naming_rng),
@@ -358,7 +377,7 @@ pub fn compile_build(db: &ContentDb, loadout: &Loadout) -> CompiledBuild {
             rules.extend(db.goetic(g).rules.iter().cloned());
         }
     }
-    let all_hidden = rules.iter().any(|r| *r == Rule::AllHiddenActive);
+    let all_hidden = rules.contains(&Rule::AllHiddenActive);
 
     for item in loadout.equipment.iter().flatten() {
         for roll in &item.affixes {
@@ -402,7 +421,11 @@ pub fn compile_build(db: &ContentDb, loadout: &Loadout) -> CompiledBuild {
         }
     }
 
-    CompiledBuild { sheet, reactions, rules }
+    CompiledBuild {
+        sheet,
+        reactions,
+        rules,
+    }
 }
 
 // ----------------------------------------------------------------- display
@@ -411,13 +434,21 @@ pub fn item_lines(db: &ContentDb, item: &ItemInstance, all_hidden: bool) -> Vec<
     let mut out = Vec::new();
     out.push((item.name.clone(), item.rarity.color()));
     out.push((
-        format!("{} {} T{}", item.rarity.name(), slot_name(item.slot), item.ilvl),
+        format!(
+            "{} {} T{}",
+            item.rarity.name(),
+            slot_name(item.slot),
+            item.ilvl
+        ),
         palette::ASH * 4.0,
     ));
     if let Some(g) = &item.goetic {
         let def = db.goetic(g);
         for m in &def.mods {
-            out.push((format!("{} {:+.0}%", m.stat.to_uppercase(), m.value * 100.0), palette::BONE));
+            out.push((
+                format!("{} {:+.0}%", m.stat.to_uppercase(), m.value * 100.0),
+                palette::BONE,
+            ));
         }
         for r in &def.reactions {
             out.push((reaction_line(r), palette::BRIMSTONE));
@@ -483,7 +514,10 @@ pub fn rule_line(r: &Rule) -> String {
     match r {
         Rule::AllHiddenActive => "ALL VEILED AFFIXES ARE ACTIVE".into(),
         Rule::PlayerDiscordable { power } => {
-            format!("YOU CAN BE DISCORDED. WHILE DISCORDED +{:.0}% DAMAGE", power * 100.0)
+            format!(
+                "YOU CAN BE DISCORDED. WHILE DISCORDED +{:.0}% DAMAGE",
+                power * 100.0
+            )
         }
         Rule::ProcsTargetSelf => "YOUR PROCS MAY TARGET YOU".into(),
         Rule::LockBlight => "THE CYCLE IS LOCKED TO BLIGHT".into(),

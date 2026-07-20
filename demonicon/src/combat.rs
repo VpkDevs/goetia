@@ -30,7 +30,11 @@ pub struct Health {
 
 impl Health {
     pub fn new(max: f32) -> Health {
-        Health { hp: max, max, flash: 0.0 }
+        Health {
+            hp: max,
+            max,
+            flash: 0.0,
+        }
     }
 }
 
@@ -164,7 +168,7 @@ pub struct DelayedHit {
 /// Player-adjacent state threaded through combat systems.
 pub struct PlayerCtx {
     pub entity: Entity,
-    pub aim: Vec2,           // ground cursor
+    pub aim: Vec2, // ground cursor
     pub cast_count: u64,
     pub last_cast: Option<(usize, Vec2)>,
     /// Deferred casts queued by Echo/FreeReset reactions.
@@ -268,15 +272,24 @@ pub fn hit_enemy(
     can_crit: bool,
     from_delayed: bool,
 ) -> HitResult {
-    let mut out = HitResult { killed: false, crit: false, total: 0.0 };
+    let mut out = HitResult {
+        killed: false,
+        crit: false,
+        total: 0.0,
+    };
     if !eng.world.is_alive(target) {
         return out;
     }
     // BUER is a wheel: only the blight phase can cut him (kill the wheel in
     // the correct phase — realm mechanics beat raw damage).
     if crate::enemies::buer_immune(eng, gs, target) {
-        if eng.clock.tick % 30 == 0 {
-            eng.floaters.spawn(Vec3::new(at.x, 1.5, at.y), "IMMUNE", palette::ICHOR.extend(0.9), 1.4);
+        if eng.clock.tick.is_multiple_of(30) {
+            eng.floaters.spawn(
+                Vec3::new(at.x, 1.5, at.y),
+                "IMMUNE",
+                palette::ICHOR.extend(0.9),
+                1.4,
+            );
         }
         return out;
     }
@@ -322,7 +335,8 @@ pub fn hit_enemy(
                 dmg[1] *= amp;
                 dmg[2] *= amp;
                 dmg[3] *= amp;
-                eng.triggers.emit(TR_STATUS_DETONATE, gs.pc.entity, target, stacks as f32);
+                eng.triggers
+                    .emit(TR_STATUS_DETONATE, gs.pc.entity, target, stacks as f32);
                 gs.last_player_trigger = Some(TR_STATUS_DETONATE);
             }
         }
@@ -334,7 +348,8 @@ pub fn hit_enemy(
             let mut evs = Vec::new();
             if let Some((stacks, _)) = bag.detonate(target, ST_PETRIFY, &mut evs) {
                 dmg[0] *= 1.6 + 0.2 * stacks as f32;
-                eng.triggers.emit(TR_STATUS_DETONATE, gs.pc.entity, target, stacks as f32);
+                eng.triggers
+                    .emit(TR_STATUS_DETONATE, gs.pc.entity, target, stacks as f32);
                 spawn_burst(eng, at, palette::ASH * 3.0, 20, 3.0);
             }
         }
@@ -369,8 +384,17 @@ pub fn hit_enemy(
 
     let dt = dominant_type(&dmg);
     let scale = if crit { 2.2 } else { 1.5 };
-    let txt = if crit { format!("{:.0}!", total) } else { format!("{:.0}", total) };
-    eng.floaters.spawn(Vec3::new(at.x, 0.6, at.y), txt, dt.color().extend(1.0), scale);
+    let txt = if crit {
+        format!("{:.0}!", total)
+    } else {
+        format!("{:.0}", total)
+    };
+    eng.floaters.spawn(
+        Vec3::new(at.x, 0.6, at.y),
+        txt,
+        dt.color().extend(1.0),
+        scale,
+    );
     if crit {
         eng.triggers.emit(TR_CRIT, gs.pc.entity, target, total);
         gs.last_player_trigger = Some(TR_CRIT);
@@ -381,14 +405,20 @@ pub fn hit_enemy(
     // The delayed-double Goetic. Delayed hits don't re-schedule (that would be
     // 2^n, and even Pillar 1 has a memory budget) — but everything else stacks.
     if !from_delayed && gs.build.has_rule(&Rule::DoubleDamageDelayed) {
-        eng.world.spawn((DelayedHit { target, dmg: base, delay: 60, at },));
+        eng.world.spawn((DelayedHit {
+            target,
+            dmg: base,
+            delay: 60,
+            at,
+        },));
     }
 
     if killed {
         kill_enemy(eng, gs, target, at, total);
         out.killed = true;
     } else {
-        eng.audio.play(&gs.sounds.hit, "sfx", 0.12, 0.9 + (total % 7.0) * 0.03);
+        eng.audio
+            .play(&gs.sounds.hit, "sfx", 0.12, 0.9 + (total % 7.0) * 0.03);
     }
     out
 }
@@ -406,7 +436,9 @@ pub fn kill_enemy(eng: &mut Engine, gs: &mut Gs, target: Entity, at: Vec2, overk
     if had_ignite {
         let spread_r = 4.0;
         let mut near = Vec::new();
-        eng.world.resource::<SpatialGrid>().query_radius(at, spread_r, MASK_ENEMY, &mut near);
+        eng.world
+            .resource::<SpatialGrid>()
+            .query_radius(at, spread_r, MASK_ENEMY, &mut near);
         for (e, _) in near.into_iter().take(6) {
             if e != target {
                 apply_status_to(eng, gs, e, "ignite", ig_stacks, ig_mag);
@@ -416,7 +448,11 @@ pub fn kill_enemy(eng: &mut Engine, gs: &mut Gs, target: Entity, at: Vec2, overk
     }
 
     // Elite/normal juice scale.
-    let elite = eng.world.get::<EnemyC>(target).map(|e| e.elite).unwrap_or(false);
+    let elite = eng
+        .world
+        .get::<EnemyC>(target)
+        .map(|e| e.elite)
+        .unwrap_or(false);
     let (scale, tint) = eng
         .world
         .get::<EnemyC>(target)
@@ -428,21 +464,47 @@ pub fn kill_enemy(eng: &mut Engine, gs: &mut Gs, target: Entity, at: Vec2, overk
         let p = *p;
         eng.world.spawn((
             Pos(p.0),
-            CorpseC { age: 0, max_age: 240, scale, tint },
+            CorpseC {
+                age: 0,
+                max_age: 240,
+                scale,
+                tint,
+            },
         ));
     }
-    spawn_burst(eng, at, palette::BLOOD, if elite { 80 } else { 26 }, if elite { 7.0 } else { 4.5 });
+    spawn_burst(
+        eng,
+        at,
+        palette::BLOOD,
+        if elite { 80 } else { 26 },
+        if elite { 7.0 } else { 4.5 },
+    );
     eng.hitstop(if elite { 0.05 } else { 0.018 });
     eng.shake(if elite { 0.25 } else { 0.06 });
-    eng.audio.play(&gs.sounds.kill, "sfx", if elite { 0.7 } else { 0.3 }, if elite { 0.7 } else { 1.0 });
+    eng.audio.play(
+        &gs.sounds.kill,
+        "sfx",
+        if elite { 0.7 } else { 0.3 },
+        if elite { 0.7 } else { 1.0 },
+    );
     let _ = overkill;
 
     // Volatile dead (realm modifier): corpses detonate against YOU.
     if gs.death_novas {
-        let pp = eng.world.get::<Pos>(gs.pc.entity).map(|p| p.0).unwrap_or(Vec2::ZERO);
+        let pp = eng
+            .world
+            .get::<Pos>(gs.pc.entity)
+            .map(|p| p.0)
+            .unwrap_or(Vec2::ZERO);
         spawn_ring(eng, at, 2.6, palette::BRIMSTONE);
         if pp.distance(at) < 2.6 {
-            hit_player(eng, gs, 6.0 + gs.tier as f32 * 2.0, DmgType::Hellfire, false);
+            hit_player(
+                eng,
+                gs,
+                6.0 + gs.tier as f32 * 2.0,
+                DmgType::Hellfire,
+                false,
+            );
         }
     }
 
@@ -466,7 +528,9 @@ pub fn apply_status_to(
     magnitude: f32,
 ) {
     let id = status_by_name(status);
-    let Some(def) = gs.status_reg.get(id).cloned() else { return };
+    let Some(def) = gs.status_reg.get(id).cloned() else {
+        return;
+    };
     let mut dur_mult = 1u32;
     if id == ST_IGNITE && gs.build.has_rule(&Rule::EternalIgnite) {
         dur_mult = 10;
@@ -476,7 +540,8 @@ pub fn apply_status_to(
         let mut d = def.clone();
         d.duration_ticks *= dur_mult;
         bag.apply(target, &d, stacks, magnitude, &mut evs);
-        eng.triggers.emit(TR_STATUS_APPLY, gs.pc.entity, target, stacks as f32);
+        eng.triggers
+            .emit(TR_STATUS_APPLY, gs.pc.entity, target, stacks as f32);
         gs.last_player_trigger = Some(TR_STATUS_APPLY);
         // Blight detonates at cap: instant burst of accumulated rot.
         if id == ST_BLIGHT {
@@ -490,8 +555,13 @@ pub fn apply_status_to(
                 if let Some(bag) = eng.world.get_mut::<StatusBag>(target) {
                     if let Some((s, m)) = bag.detonate(target, ST_BLIGHT, &mut evs2) {
                         let burst = 8.0 + m * 1.5 * s as f32;
-                        let pos = eng.world.get::<Pos>(target).map(|p| p.0).unwrap_or(Vec2::ZERO);
-                        eng.triggers.emit(TR_STATUS_DETONATE, gs.pc.entity, target, s as f32);
+                        let pos = eng
+                            .world
+                            .get::<Pos>(target)
+                            .map(|p| p.0)
+                            .unwrap_or(Vec2::ZERO);
+                        eng.triggers
+                            .emit(TR_STATUS_DETONATE, gs.pc.entity, target, s as f32);
                         spawn_burst(eng, pos, palette::ICHOR, 40, 5.0);
                         hit_enemy(
                             eng,
@@ -517,7 +587,11 @@ pub fn hit_player(eng: &mut Engine, gs: &mut Gs, raw: f32, dtype: DmgType, from_
     if gs.pc.iframes > 0 && !from_self_proc {
         return;
     }
-    let reduction = if dtype == DmgType::Physical { gs.stat(K_ARMOR) } else { gs.stat(K_RESIST) };
+    let reduction = if dtype == DmgType::Physical {
+        gs.stat(K_ARMOR)
+    } else {
+        gs.stat(K_RESIST)
+    };
     let mut amount = raw * (1.0 - reduction.clamp(0.0, 0.75));
 
     // Consecrated ground: harm flips to healing on aligned ground.
@@ -543,7 +617,8 @@ pub fn hit_player(eng: &mut Engine, gs: &mut Gs, raw: f32, dtype: DmgType, from_
         eng.audio.play(&gs.sounds.hurt, "sfx", 0.5, 1.0);
         if frac < 0.35 && gs.pc.low_life_armed {
             gs.pc.low_life_armed = false;
-            eng.triggers.emit(TR_LOW_LIFE, gs.pc.entity, gs.pc.entity, frac);
+            eng.triggers
+                .emit(TR_LOW_LIFE, gs.pc.entity, gs.pc.entity, frac);
             gs.last_player_trigger = Some(TR_LOW_LIFE);
         }
         if frac > 0.5 {
@@ -553,14 +628,20 @@ pub fn hit_player(eng: &mut Engine, gs: &mut Gs, raw: f32, dtype: DmgType, from_
 }
 
 pub fn heal_player(eng: &mut Engine, gs: &mut Gs, amount: f32) {
-    let blight_tax = if gs.blight_phase && !gs.build.has_rule(&Rule::BlightHealsYou) { 0.5 } else { 1.0 };
+    let blight_tax = if gs.blight_phase && !gs.build.has_rule(&Rule::BlightHealsYou) {
+        0.5
+    } else {
+        1.0
+    };
     if let Some(h) = eng.world.get_mut::<Health>(gs.pc.entity) {
         h.hp = (h.hp + amount * blight_tax).min(h.max);
     }
 }
 
 fn player_on_consecrate(eng: &mut Engine, gs: &Gs) -> bool {
-    let Some(pp) = eng.world.get::<Pos>(gs.pc.entity).copied() else { return false };
+    let Some(pp) = eng.world.get::<Pos>(gs.pc.entity).copied() else {
+        return false;
+    };
     let mut found = false;
     eng.world.each::<(&Pos, &Zone)>(|_, (zp, z)| {
         if z.consecrate && !z.inverted && zp.0.distance(pp.0) < z.radius {
@@ -582,9 +663,18 @@ pub fn tick_statuses(eng: &mut Engine, gs: &mut Gs) {
 
     for ev in events {
         match ev {
-            StatusEvent::Ticked { entity, id, stacks, magnitude } => {
+            StatusEvent::Ticked {
+                entity,
+                id,
+                stacks,
+                magnitude,
+            } => {
                 if id == ST_IGNITE {
-                    let at = eng.world.get::<Pos>(entity).map(|p| p.0).unwrap_or(Vec2::ZERO);
+                    let at = eng
+                        .world
+                        .get::<Pos>(entity)
+                        .map(|p| p.0)
+                        .unwrap_or(Vec2::ZERO);
                     let is_player = entity == gs.pc.entity;
                     if is_player {
                         hit_player(eng, gs, magnitude.max(1.0), DmgType::Hellfire, true);
@@ -595,14 +685,23 @@ pub fn tick_statuses(eng: &mut Engine, gs: &mut Gs) {
                             gs,
                             entity,
                             at,
-                            [0.0, (magnitude * (1.0 + stacks as f32 * 0.5)).max(1.0), 0.0, 0.0],
+                            [
+                                0.0,
+                                (magnitude * (1.0 + stacks as f32 * 0.5)).max(1.0),
+                                0.0,
+                                0.0,
+                            ],
                             &[],
                             false,
                             true, // suppress delayed-double on DoTs
                         );
                     }
                 } else if id == ST_BLIGHT {
-                    let at = eng.world.get::<Pos>(entity).map(|p| p.0).unwrap_or(Vec2::ZERO);
+                    let at = eng
+                        .world
+                        .get::<Pos>(entity)
+                        .map(|p| p.0)
+                        .unwrap_or(Vec2::ZERO);
                     if entity != gs.pc.entity {
                         hit_enemy(
                             eng,
@@ -661,8 +760,16 @@ pub fn process_triggers(eng: &mut Engine, gs: &mut Gs) {
             // re-enter the bus as fresh emissions from the damage pipeline;
             // the per-tick budget is the only damper. No exceptions (Pillar 1).
             let _ = &em;
-            let target = if procs_self && rng.chance(0.25) { player } else { ev.target };
-            queued.push(Queued { action: r.action.clone(), target, magnitude: ev.magnitude });
+            let target = if procs_self && rng.chance(0.25) {
+                player
+            } else {
+                ev.target
+            };
+            queued.push(Queued {
+                action: r.action.clone(),
+                target,
+                magnitude: ev.magnitude,
+            });
         }
     });
     *eng.streams.get("proc") = rng;
@@ -683,7 +790,12 @@ pub fn process_triggers(eng: &mut Engine, gs: &mut Gs) {
                 dmg[dtype.index()] = base;
                 nova_at(eng, gs, at, radius, dmg, &[], q.target == player);
             }
-            Action::ApplyStatus { status, stacks, magnitude, radius } => {
+            Action::ApplyStatus {
+                status,
+                stacks,
+                magnitude,
+                radius,
+            } => {
                 if q.target == player {
                     // Self-targeted proc: statuses land on YOU (Andras pact).
                     apply_status_to(eng, gs, player, &status, stacks, magnitude * 10.0);
@@ -738,14 +850,19 @@ pub fn process_triggers(eng: &mut Engine, gs: &mut Gs) {
                     .get_mut::<StatusBag>(q.target)
                     .and_then(|b| b.detonate(q.target, id, &mut evs));
                 if let Some((stacks, mag)) = popped {
-                    eng.triggers.emit(TR_STATUS_DETONATE, player, q.target, stacks as f32);
+                    eng.triggers
+                        .emit(TR_STATUS_DETONATE, player, q.target, stacks as f32);
                     let burst = weapon_power(gs) * 0.6 + mag * stacks as f32;
                     let mut dmg = [0.0; 4];
                     dmg[DmgType::Hex.index()] = burst;
                     nova_at(eng, gs, at, 3.5, dmg, &[], false);
                 }
             }
-            Action::Frenzy { ticks, cast_speed, move_speed } => {
+            Action::Frenzy {
+                ticks,
+                cast_speed,
+                move_speed,
+            } => {
                 gs.pc.frenzy = gs.pc.frenzy.max(ticks as u16);
                 gs.pc.frenzy_cast = cast_speed;
                 gs.pc.frenzy_move = move_speed;
@@ -798,12 +915,18 @@ pub fn nova_at(
 ) {
     let r = radius * (1.0 + gs.stat(K_AOE));
     let mut near = Vec::new();
-    eng.world.resource::<SpatialGrid>().query_radius(at, r, MASK_ENEMY, &mut near);
+    eng.world
+        .resource::<SpatialGrid>()
+        .query_radius(at, r, MASK_ENEMY, &mut near);
     for (e, ep) in near {
         hit_enemy(eng, gs, e, ep, dmg, applies, true, false);
     }
     if hits_player {
-        let pp = eng.world.get::<Pos>(gs.pc.entity).map(|p| p.0).unwrap_or(Vec2::ZERO);
+        let pp = eng
+            .world
+            .get::<Pos>(gs.pc.entity)
+            .map(|p| p.0)
+            .unwrap_or(Vec2::ZERO);
         if pp.distance(at) < r {
             hit_player(eng, gs, dmg_total(&dmg) * 0.5, dominant_type(&dmg), true);
         }
@@ -816,11 +939,17 @@ pub fn nova_at(
 // ------------------------------------------------------------- fx helpers
 
 pub fn spawn_burst(eng: &mut Engine, at: Vec2, color: Vec3, count: u32, spread: f32) {
-    eng.world.resource_mut::<crate::fx::FxQueue>().bursts.push((at, color, count, spread));
+    eng.world
+        .resource_mut::<crate::fx::FxQueue>()
+        .bursts
+        .push((at, color, count, spread));
 }
 
 pub fn spawn_ring(eng: &mut Engine, at: Vec2, radius: f32, color: Vec3) {
-    eng.world.resource_mut::<crate::fx::FxQueue>().rings.push((at, radius, color));
+    eng.world
+        .resource_mut::<crate::fx::FxQueue>()
+        .rings
+        .push((at, radius, color));
 }
 
 // ------------------------------------------------------- delayed hit system

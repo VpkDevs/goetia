@@ -89,7 +89,13 @@ impl<'a> TriggerEmitter<'a> {
             return;
         }
         self.stats.max_depth_seen = self.stats.max_depth_seen.max(depth);
-        self.queue.push_back(TriggerEvent { kind, source, target, magnitude: m, chain_depth: depth });
+        self.queue.push_back(TriggerEvent {
+            kind,
+            source,
+            target,
+            magnitude: m,
+            chain_depth: depth,
+        });
     }
 }
 
@@ -102,13 +108,23 @@ pub struct TriggerBus {
 
 impl TriggerBus {
     pub fn new(config: TriggerConfig) -> Self {
-        TriggerBus { queue: VecDeque::new(), config, stats: TriggerStats::default() }
+        TriggerBus {
+            queue: VecDeque::new(),
+            config,
+            stats: TriggerStats::default(),
+        }
     }
 
     /// Emit a root event (chain depth 0, no falloff).
     pub fn emit(&mut self, kind: TriggerKind, source: Entity, target: Entity, magnitude: f32) {
         self.stats.emitted += 1;
-        self.queue.push_back(TriggerEvent { kind, source, target, magnitude, chain_depth: 0 });
+        self.queue.push_back(TriggerEvent {
+            kind,
+            source,
+            target,
+            magnitude,
+            chain_depth: 0,
+        });
     }
 
     pub fn pending(&self) -> usize {
@@ -162,9 +178,9 @@ mod tests {
     fn infinite_loop_is_contained() {
         let mut bus = TriggerBus::new(TriggerConfig {
             budget_per_tick: 100,
-            max_chain_depth: 1000,  // depth cap effectively off
-            chain_falloff: 1.0,     // no decay
-            magnitude_floor: 0.0,   // no floor
+            max_chain_depth: 1000, // depth cap effectively off
+            chain_falloff: 1.0,    // no decay
+            magnitude_floor: 0.0,  // no floor
         });
         bus.emit(A, E, E, 1.0);
         // A emits two B, each B emits two A: exponential explosion.

@@ -15,7 +15,12 @@ pub enum DmgType {
     Void,
 }
 
-pub const DMG_TYPES: [DmgType; 4] = [DmgType::Physical, DmgType::Hellfire, DmgType::Hex, DmgType::Void];
+pub const DMG_TYPES: [DmgType; 4] = [
+    DmgType::Physical,
+    DmgType::Hellfire,
+    DmgType::Hex,
+    DmgType::Void,
+];
 
 impl DmgType {
     pub fn index(self) -> usize {

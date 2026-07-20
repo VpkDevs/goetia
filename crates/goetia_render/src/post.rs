@@ -12,7 +12,11 @@ impl HdrTargets {
     pub fn new(device: &wgpu::Device, width: u32, height: u32) -> Self {
         let color = device.create_texture(&wgpu::TextureDescriptor {
             label: Some("hdr-color"),
-            size: wgpu::Extent3d { width, height, depth_or_array_layers: 1 },
+            size: wgpu::Extent3d {
+                width,
+                height,
+                depth_or_array_layers: 1,
+            },
             mip_level_count: 1,
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
@@ -22,7 +26,11 @@ impl HdrTargets {
         });
         let depth = device.create_texture(&wgpu::TextureDescriptor {
             label: Some("depth"),
-            size: wgpu::Extent3d { width, height, depth_or_array_layers: 1 },
+            size: wgpu::Extent3d {
+                width,
+                height,
+                depth_or_array_layers: 1,
+            },
             mip_level_count: 1,
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
@@ -32,7 +40,13 @@ impl HdrTargets {
         });
         let color_view = color.create_view(&Default::default());
         let depth_view = depth.create_view(&Default::default());
-        HdrTargets { color, color_view, depth_view, width, height }
+        HdrTargets {
+            color,
+            color_view,
+            depth_view,
+            width,
+            height,
+        }
     }
 }
 
@@ -176,10 +190,34 @@ impl PostStack {
             alpha: wgpu::BlendComponent::OVER,
         };
 
-        let prefilter = make("bloom-prefilter", "fs_prefilter", &[&layout_src], crate::HDR_FORMAT, None);
-        let down = make("bloom-down", "fs_down", &[&layout_src], crate::HDR_FORMAT, None);
-        let up = make("bloom-up", "fs_up", &[&layout_src], crate::HDR_FORMAT, Some(additive));
-        let composite = make("composite", "fs_composite", &[&layout_src, &layout_tex], out_format, None);
+        let prefilter = make(
+            "bloom-prefilter",
+            "fs_prefilter",
+            &[&layout_src],
+            crate::HDR_FORMAT,
+            None,
+        );
+        let down = make(
+            "bloom-down",
+            "fs_down",
+            &[&layout_src],
+            crate::HDR_FORMAT,
+            None,
+        );
+        let up = make(
+            "bloom-up",
+            "fs_up",
+            &[&layout_src],
+            crate::HDR_FORMAT,
+            Some(additive),
+        );
+        let composite = make(
+            "composite",
+            "fs_composite",
+            &[&layout_src, &layout_tex],
+            out_format,
+            None,
+        );
 
         let (hdr_bind, levels, bloom_top_bind) =
             build_binds(device, &layout_src, &layout_tex, &sampler, &params, hdr);
@@ -224,21 +262,26 @@ impl PostStack {
         queue.write_buffer(
             &self.params,
             0,
-            bytemuck::bytes_of(&PostParams { v: [1.0, 0.5, 0.35 * strength, 0.0] }),
+            bytemuck::bytes_of(&PostParams {
+                v: [1.0, 0.5, 0.35 * strength, 0.0],
+            }),
         );
 
         let pass = |target: &wgpu::TextureView,
-                        pipeline: &wgpu::RenderPipeline,
-                        src: &wgpu::BindGroup,
-                        extra: Option<&wgpu::BindGroup>,
-                        load: wgpu::LoadOp<wgpu::Color>,
-                        enc: &mut wgpu::CommandEncoder| {
+                    pipeline: &wgpu::RenderPipeline,
+                    src: &wgpu::BindGroup,
+                    extra: Option<&wgpu::BindGroup>,
+                    load: wgpu::LoadOp<wgpu::Color>,
+                    enc: &mut wgpu::CommandEncoder| {
             let mut rp = enc.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("post"),
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                     view: target,
                     resolve_target: None,
-                    ops: wgpu::Operations { load, store: wgpu::StoreOp::Store },
+                    ops: wgpu::Operations {
+                        load,
+                        store: wgpu::StoreOp::Store,
+                    },
                 })],
                 depth_stencil_attachment: None,
                 timestamp_writes: None,
@@ -254,17 +297,45 @@ impl PostStack {
 
         let clear = wgpu::LoadOp::Clear(wgpu::Color::BLACK);
         // Prefilter HDR -> level 0.
-        pass(&self.levels[0].view, &self.prefilter, &self.hdr_bind, None, clear, enc);
+        pass(
+            &self.levels[0].view,
+            &self.prefilter,
+            &self.hdr_bind,
+            None,
+            clear,
+            enc,
+        );
         // Downsample chain.
         for i in 0..self.levels.len() - 1 {
-            pass(&self.levels[i + 1].view, &self.down, &self.levels[i].bind, None, clear, enc);
+            pass(
+                &self.levels[i + 1].view,
+                &self.down,
+                &self.levels[i].bind,
+                None,
+                clear,
+                enc,
+            );
         }
         // Upsample additively back to level 0.
         for i in (0..self.levels.len() - 1).rev() {
-            pass(&self.levels[i].view, &self.up, &self.levels[i + 1].bind, None, wgpu::LoadOp::Load, enc);
+            pass(
+                &self.levels[i].view,
+                &self.up,
+                &self.levels[i + 1].bind,
+                None,
+                wgpu::LoadOp::Load,
+                enc,
+            );
         }
         // Composite to swapchain.
-        pass(swap_view, &self.composite, &self.hdr_bind, Some(&self.bloom_top_bind), clear, enc);
+        pass(
+            swap_view,
+            &self.composite,
+            &self.hdr_bind,
+            Some(&self.bloom_top_bind),
+            clear,
+            enc,
+        );
     }
 }
 
@@ -291,7 +362,10 @@ fn build_binds(
                     binding: 1,
                     resource: wgpu::BindingResource::TextureView(view),
                 },
-                wgpu::BindGroupEntry { binding: 2, resource: params.as_entire_binding() },
+                wgpu::BindGroupEntry {
+                    binding: 2,
+                    resource: params.as_entire_binding(),
+                },
             ],
         })
     };
@@ -303,7 +377,11 @@ fn build_binds(
     for _ in 0..BLOOM_LEVELS {
         let tex = device.create_texture(&wgpu::TextureDescriptor {
             label: Some("bloom"),
-            size: wgpu::Extent3d { width: w, height: h, depth_or_array_layers: 1 },
+            size: wgpu::Extent3d {
+                width: w,
+                height: h,
+                depth_or_array_layers: 1,
+            },
             mip_level_count: 1,
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,

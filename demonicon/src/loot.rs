@@ -20,10 +20,21 @@ pub fn drop_loot(eng: &mut Engine, gs: &mut Gs, at: Vec2, elite: bool) {
                 // Commons auto-shatter: dust on the ground, zero inventory sludge.
                 eng.world.spawn((
                     Pos(at + Vec2::new(rng.range_f32(-0.8, 0.8), rng.range_f32(-0.8, 0.8))),
-                    LootDrop { item: None, dust: 1 + rng.range_u32(3), age: 0 },
+                    LootDrop {
+                        item: None,
+                        dust: 1 + rng.range_u32(3),
+                        age: 0,
+                    },
                 ));
             } else {
-                let item = gen_item(&gs.db, &mut gs.loot, &mut rng, rarity, gs.tier, gs.reveal_on_drop);
+                let item = gen_item(
+                    &gs.db,
+                    &mut gs.loot,
+                    &mut rng,
+                    rarity,
+                    gs.tier,
+                    gs.reveal_on_drop,
+                );
                 let auto_appraise = gs.build.has_rule(&crate::content::Rule::AppraiseOnPickup);
                 let mut item = item;
                 if auto_appraise {
@@ -33,7 +44,11 @@ pub fn drop_loot(eng: &mut Engine, gs: &mut Gs, at: Vec2, elite: bool) {
                 }
                 eng.world.spawn((
                     Pos(at + Vec2::new(rng.range_f32(-1.0, 1.0), rng.range_f32(-1.0, 1.0))),
-                    LootDrop { item: Some(item), dust: 0, age: 0 },
+                    LootDrop {
+                        item: Some(item),
+                        dust: 0,
+                        age: 0,
+                    },
                 ));
             }
         }
@@ -51,20 +66,45 @@ pub fn boss_loot(eng: &mut Engine, gs: &mut Gs, at: Vec2) {
         let p = at + Vec2::new(a.cos(), a.sin()) * rng.range_f32(1.0, 3.0);
         gs.loot.rare_misses += 6; // the kill earns pity
         let rarity = roll_rarity(&mut gs.loot, &mut rng, 1.2).max(Rarity::Magic);
-        let item = gen_item(&gs.db, &mut gs.loot, &mut rng, rarity, gs.tier, gs.reveal_on_drop);
-        eng.world.spawn((Pos(p), LootDrop { item: Some(item), dust: 0, age: 0 }));
+        let item = gen_item(
+            &gs.db,
+            &mut gs.loot,
+            &mut rng,
+            rarity,
+            gs.tier,
+            gs.reveal_on_drop,
+        );
+        eng.world.spawn((
+            Pos(p),
+            LootDrop {
+                item: Some(item),
+                dust: 0,
+                age: 0,
+            },
+        ));
     }
     // And a dust cascade.
     for _ in 0..6 {
         let p = at + Vec2::new(rng.range_f32(-3.0, 3.0), rng.range_f32(-3.0, 3.0));
-        eng.world.spawn((Pos(p), LootDrop { item: None, dust: 4 + rng.range_u32(6), age: 0 }));
+        eng.world.spawn((
+            Pos(p),
+            LootDrop {
+                item: None,
+                dust: 4 + rng.range_u32(6),
+                age: 0,
+            },
+        ));
     }
     *eng.streams.get("loot") = rng;
 }
 
 /// Walk-over pickup + loot gravity + the fanfare ladder.
 pub fn tick_pickup(eng: &mut Engine, gs: &mut Gs) {
-    let ppos = eng.world.get::<Pos>(gs.pc.entity).map(|p| p.0).unwrap_or(Vec2::ZERO);
+    let ppos = eng
+        .world
+        .get::<Pos>(gs.pc.entity)
+        .map(|p| p.0)
+        .unwrap_or(Vec2::ZERO);
     let gravity = gs.build.has_rule(&crate::content::Rule::LootGravity);
     let mut picked: Vec<(Entity, Option<ItemInstance>, u32, Vec2)> = Vec::new();
     eng.world.each::<(&mut Pos, &mut LootDrop)>(|e, (p, l)| {

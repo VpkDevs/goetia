@@ -92,8 +92,8 @@ pub fn generate(eng: &mut Engine, gs: &mut Gs, demon: Demon, tier: u32) -> RunSt
     let realm = gs.db.realm(demon).clone();
     let templates = gs.db.room_templates(demon).to_vec();
     let grammar = gs.db.grammar(demon).clone();
-    let layout = assemble(&templates, &grammar, eng.streams.get("layout"))
-        .expect("realm start template");
+    let layout =
+        assemble(&templates, &grammar, eng.streams.get("layout")).expect("realm start template");
 
     // Walkable set: room cells + door cells.
     let mut walk: HashSet<(i32, i32)> = HashSet::new();
@@ -150,20 +150,41 @@ pub fn generate(eng: &mut Engine, gs: &mut Gs, demon: Demon, tier: u32) -> RunSt
         let t = &templates[room.template];
         let area = (t.width * t.height) as f32;
         let is_boss_room = ri == boss_room;
-        let packs = if is_boss_room { 1 } else { 1 + (area / 12.0) as u32 };
+        let packs = if is_boss_room {
+            1
+        } else {
+            1 + (area / 12.0) as u32
+        };
         for _ in 0..packs {
             let px = (room.x as f32 + rng.range_f32(0.6, t.width as f32 - 0.6)) * CELL;
             let py = (room.y as f32 + rng.range_f32(0.6, t.height as f32 - 0.6)) * CELL;
             let pack_at = Vec2::new(px, py);
-            let size = if is_boss_room { 2 } else { density / 2 + rng.range_u32(density) };
-            let weights: Vec<f32> =
-                realm.enemies.iter().map(|e| gs.db.enemy(e).weight).collect();
+            let size = if is_boss_room {
+                2
+            } else {
+                density / 2 + rng.range_u32(density)
+            };
+            let weights: Vec<f32> = realm
+                .enemies
+                .iter()
+                .map(|e| gs.db.enemy(e).weight)
+                .collect();
             for _ in 0..size {
                 let pick = rng.weighted_index(&weights).unwrap_or(0);
                 let id = realm.enemies[pick].clone();
                 let off = Vec2::new(rng.range_f32(-2.0, 2.0), rng.range_f32(-2.0, 2.0));
                 let elite = rng.chance(0.06 + tier as f32 * 0.005);
-                let e = spawn_enemy(eng, &gs.db, &id, pack_at + off, tier, elite, hp_mul, dmg_mul, speed_mul);
+                let e = spawn_enemy(
+                    eng,
+                    &gs.db,
+                    &id,
+                    pack_at + off,
+                    tier,
+                    elite,
+                    hp_mul,
+                    dmg_mul,
+                    speed_mul,
+                );
                 if spawn_discord > 0 {
                     apply_status_to(eng, gs, e, "discord", spawn_discord, 3.0);
                 }
@@ -177,8 +198,25 @@ pub fn generate(eng: &mut Engine, gs: &mut Gs, demon: Demon, tier: u32) -> RunSt
         Demon::Andras => BossKind::Andras,
         Demon::Buer => BossKind::Buer,
     };
-    let boss = spawn_enemy(eng, &gs.db, &realm.boss, boss_pos, tier, false, hp_mul * (realm.boss_hp / 100.0), dmg_mul, speed_mul);
-    eng.world.insert(boss, BossC { kind: boss_kind, timer: 90, phase: 0 });
+    let boss = spawn_enemy(
+        eng,
+        &gs.db,
+        &realm.boss,
+        boss_pos,
+        tier,
+        false,
+        hp_mul * (realm.boss_hp / 100.0),
+        dmg_mul,
+        speed_mul,
+    );
+    eng.world.insert(
+        boss,
+        BossC {
+            kind: boss_kind,
+            timer: 90,
+            phase: 0,
+        },
+    );
 
     // Shrines (Vassago's realm gets the reveal shrines) + corruption altar.
     let mut shrines = Vec::new();
@@ -189,7 +227,9 @@ pub fn generate(eng: &mut Engine, gs: &mut Gs, demon: Demon, tier: u32) -> RunSt
             }
         }
     }
-    let altar_room = (1..layout.rooms.len()).find(|&i| i != boss_room).unwrap_or(0);
+    let altar_room = (1..layout.rooms.len())
+        .find(|&i| i != boss_room)
+        .unwrap_or(0);
     let altar = center(altar_room) + Vec2::new(-1.5, 1.5);
 
     eng.camera.target = Vec3::new(entry.x, 0.0, entry.y);
@@ -271,7 +311,13 @@ pub fn tick_player(eng: &mut Engine, gs: &mut Gs, input: &InputFrame) {
 
     // Movement.
     let speed = 6.5
-        * (1.0 + gs.stat(K_SPEED) + if gs.pc.frenzy > 0 { gs.pc.frenzy_move } else { 0.0 });
+        * (1.0
+            + gs.stat(K_SPEED)
+            + if gs.pc.frenzy > 0 {
+                gs.pc.frenzy_move
+            } else {
+                0.0
+            });
     let moving = input.mv.length_squared() > 0.01;
     if moving {
         gs.pc.still_ticks = 0;
@@ -279,7 +325,11 @@ pub fn tick_player(eng: &mut Engine, gs: &mut Gs, input: &InputFrame) {
         gs.pc.still_ticks = gs.pc.still_ticks.saturating_add(1);
     }
     let (from, to) = {
-        let p = eng.world.get::<Pos>(gs.pc.entity).map(|p| p.0).unwrap_or(Vec2::ZERO);
+        let p = eng
+            .world
+            .get::<Pos>(gs.pc.entity)
+            .map(|p| p.0)
+            .unwrap_or(Vec2::ZERO);
         (p, p + input.mv * speed * FIXED_DT)
     };
     let to = clamp_walkable(gs, from, to);
@@ -324,7 +374,11 @@ pub fn tick_player(eng: &mut Engine, gs: &mut Gs, input: &InputFrame) {
             } else {
                 gs.pc.dodge_cd = 60;
             }
-            let dir = if moving { input.mv } else { (input.aim - to).normalize_or_zero() };
+            let dir = if moving {
+                input.mv
+            } else {
+                (input.aim - to).normalize_or_zero()
+            };
             crate::skills::player_dash(eng, gs, dir, 4.5, &[0.0; 4], &[], 0);
         }
     }
@@ -340,7 +394,9 @@ pub fn tick_player(eng: &mut Engine, gs: &mut Gs, input: &InputFrame) {
     // Echo/pending casts: bounded drain per tick; the rest carries over.
     let mut budget = 8;
     while budget > 0 {
-        let Some((slot, power, aim)) = gs.pc.pending_casts.pop() else { break };
+        let Some((slot, power, aim)) = gs.pc.pending_casts.pop() else {
+            break;
+        };
         crate::skills::cast(eng, gs, slot, power, aim, true);
         budget -= 1;
     }
@@ -377,14 +433,27 @@ pub fn tick_run(eng: &mut Engine, gs: &mut Gs, rs: &mut RunState) -> RunEvent {
             if rs.cycle_timer >= period {
                 rs.cycle_timer = 0;
                 gs.blight_phase = !gs.blight_phase;
-                let c = if gs.blight_phase { palette::ICHOR } else { palette::GOLD };
-                let pp = eng.world.get::<Pos>(gs.pc.entity).map(|p| p.0).unwrap_or(Vec2::ZERO);
+                let c = if gs.blight_phase {
+                    palette::ICHOR
+                } else {
+                    palette::GOLD
+                };
+                let pp = eng
+                    .world
+                    .get::<Pos>(gs.pc.entity)
+                    .map(|p| p.0)
+                    .unwrap_or(Vec2::ZERO);
                 spawn_ring(eng, pp, 12.0, c);
-                eng.audio.play(&gs.sounds.ritual, "sfx", 0.5, if gs.blight_phase { 0.7 } else { 1.3 });
+                eng.audio.play(
+                    &gs.sounds.ritual,
+                    "sfx",
+                    0.5,
+                    if gs.blight_phase { 0.7 } else { 1.3 },
+                );
             }
         }
         // Blight pressure on the player (or nourishment, if pacted).
-        if gs.blight_phase && rs.ticks % 30 == 0 {
+        if gs.blight_phase && rs.ticks.is_multiple_of(30) {
             if gs.build.has_rule(&Rule::BlightHealsYou) {
                 let amt = gs.stat(K_MAX_HP) * 0.01;
                 heal_player(eng, gs, amt);
@@ -462,7 +531,11 @@ pub fn tick_run(eng: &mut Engine, gs: &mut Gs, rs: &mut RunState) -> RunEvent {
 }
 
 fn interact(eng: &mut Engine, gs: &mut Gs, rs: &mut RunState) {
-    let pp = eng.world.get::<Pos>(gs.pc.entity).map(|p| p.0).unwrap_or(Vec2::ZERO);
+    let pp = eng
+        .world
+        .get::<Pos>(gs.pc.entity)
+        .map(|p| p.0)
+        .unwrap_or(Vec2::ZERO);
 
     // Exit portal (after boss) or entry portal: bank and leave.
     let near_exit = rs.portal_out.map(|p| pp.distance(p) < 2.5).unwrap_or(false);
@@ -489,7 +562,11 @@ fn interact(eng: &mut Engine, gs: &mut Gs, rs: &mut RunState) {
                 eng.audio.play(&gs.sounds.curse, "sfx", 0.8, 0.6);
             }
             let mut revealed = 0;
-            for item in gs.run_inv.iter_mut().chain(gs.loadout.equipment.iter_mut().flatten()) {
+            for item in gs
+                .run_inv
+                .iter_mut()
+                .chain(gs.loadout.equipment.iter_mut().flatten())
+            {
                 for a in &mut item.affixes {
                     if a.hidden && !a.revealed {
                         a.revealed = true;
@@ -533,7 +610,8 @@ fn interact(eng: &mut Engine, gs: &mut Gs, rs: &mut RunState) {
         gs.dust -= 10;
         let mut crng = eng.streams.get("corrupt").clone();
         let mut nrng = eng.streams.get("naming").clone();
-        let outcome = crate::items::corrupt_item(&gs.db, &mut gs.loot, &mut crng, &mut nrng, &mut item);
+        let outcome =
+            crate::items::corrupt_item(&gs.db, &mut gs.loot, &mut crng, &mut nrng, &mut item);
         *eng.streams.get("corrupt") = crng;
         *eng.streams.get("naming") = nrng;
         eng.audio.play(&gs.sounds.corrupt, "sfx", 0.8, 1.0);
@@ -560,6 +638,11 @@ fn interact(eng: &mut Engine, gs: &mut Gs, rs: &mut RunState) {
                 (format!("AWAKENED: {name}"), palette::BRIMSTONE)
             }
         };
-        eng.floaters.spawn(Vec3::new(rs.altar.x, 1.8, rs.altar.y), txt, color.extend(1.0), 2.2);
+        eng.floaters.spawn(
+            Vec3::new(rs.altar.x, 1.8, rs.altar.y),
+            txt,
+            color.extend(1.0),
+            2.2,
+        );
     }
 }

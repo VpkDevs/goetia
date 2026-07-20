@@ -78,7 +78,15 @@ impl StatSheet {
     ) -> ModifierHandle {
         let h = ModifierHandle(self.next_handle);
         self.next_handle += 1;
-        self.mods.insert(h, Modifier { key, op, value, priority });
+        self.mods.insert(
+            h,
+            Modifier {
+                key,
+                op,
+                value,
+                priority,
+            },
+        );
         self.invalidate(key);
         h
     }

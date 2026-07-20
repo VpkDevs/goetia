@@ -48,7 +48,11 @@ impl DamageNumbers {
         for f in &self.items {
             let t = f.age / f.life;
             // Pop in (overshoot), rise, fade out.
-            let pop = if t < 0.15 { 0.6 + t / 0.15 * 0.6 } else { 1.2 - (t - 0.15) * 0.25 };
+            let pop = if t < 0.15 {
+                0.6 + t / 0.15 * 0.6
+            } else {
+                1.2 - (t - 0.15) * 0.25
+            };
             let rise = t * 1.6;
             let mut p = cam.world_to_screen(f.world + Vec3::Y * (1.8 + rise), viewport, aspect);
             let alpha = if t > 0.6 { 1.0 - (t - 0.6) / 0.4 } else { 1.0 };

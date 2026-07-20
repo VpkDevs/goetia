@@ -70,10 +70,28 @@ pub struct ActiveStatus {
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum StatusEvent {
-    Applied { entity: Entity, id: StatusId, stacks: u32 },
-    Ticked { entity: Entity, id: StatusId, stacks: u32, magnitude: f32 },
-    Expired { entity: Entity, id: StatusId, stacks: u32 },
-    Detonated { entity: Entity, id: StatusId, stacks: u32, magnitude: f32 },
+    Applied {
+        entity: Entity,
+        id: StatusId,
+        stacks: u32,
+    },
+    Ticked {
+        entity: Entity,
+        id: StatusId,
+        stacks: u32,
+        magnitude: f32,
+    },
+    Expired {
+        entity: Entity,
+        id: StatusId,
+        stacks: u32,
+    },
+    Detonated {
+        entity: Entity,
+        id: StatusId,
+        stacks: u32,
+        magnitude: f32,
+    },
 }
 
 /// Per-entity component holding active statuses. Small vec; typical entity
@@ -109,22 +127,38 @@ impl StatusBag {
     ) {
         let id = def.id();
         if let Some(s) = self.active.iter_mut().find(|s| s.id == id) {
-            let cap = if def.max_stacks == 0 { 1 } else { def.max_stacks };
+            let cap = if def.max_stacks == 0 {
+                1
+            } else {
+                def.max_stacks
+            };
             s.stacks = (s.stacks + stacks).min(cap);
             s.magnitude = s.magnitude.max(magnitude);
             if def.refresh_on_apply {
                 s.remaining = def.duration_ticks;
             }
-            events.push(StatusEvent::Applied { entity, id, stacks: s.stacks });
+            events.push(StatusEvent::Applied {
+                entity,
+                id,
+                stacks: s.stacks,
+            });
         } else {
             self.active.push(ActiveStatus {
                 id,
-                stacks: stacks.max(1).min(if def.max_stacks == 0 { 1 } else { def.max_stacks }),
+                stacks: stacks.max(1).min(if def.max_stacks == 0 {
+                    1
+                } else {
+                    def.max_stacks
+                }),
                 remaining: def.duration_ticks,
                 tick_timer: def.tick_interval,
                 magnitude,
             });
-            events.push(StatusEvent::Applied { entity, id, stacks: stacks.max(1) });
+            events.push(StatusEvent::Applied {
+                entity,
+                id,
+                stacks: stacks.max(1),
+            });
         }
     }
 
@@ -155,7 +189,11 @@ impl StatusBag {
             let permanent = def.map(|d| d.duration_ticks == 0).unwrap_or(false);
             if !permanent {
                 if s.remaining <= 1 {
-                    let ev = StatusEvent::Expired { entity, id: s.id, stacks: s.stacks };
+                    let ev = StatusEvent::Expired {
+                        entity,
+                        id: s.id,
+                        stacks: s.stacks,
+                    };
                     self.active.swap_remove(i);
                     events.push(ev);
                     continue; // don't advance i — swapped element takes slot i
@@ -228,8 +266,14 @@ mod tests {
         bag.tick(e, &reg, &mut evs); // tick 1: Ticked
         bag.tick(e, &reg, &mut evs); // tick 2: Ticked
         bag.tick(e, &reg, &mut evs); // tick 3: Ticked + Expired
-        let ticked = evs.iter().filter(|e| matches!(e, StatusEvent::Ticked { .. })).count();
-        let expired = evs.iter().filter(|e| matches!(e, StatusEvent::Expired { .. })).count();
+        let ticked = evs
+            .iter()
+            .filter(|e| matches!(e, StatusEvent::Ticked { .. }))
+            .count();
+        let expired = evs
+            .iter()
+            .filter(|e| matches!(e, StatusEvent::Expired { .. }))
+            .count();
         assert_eq!(ticked, 3);
         assert_eq!(expired, 1);
         assert!(!bag.has(id));
@@ -245,6 +289,9 @@ mod tests {
         let got = bag.detonate(e, d.id(), &mut evs);
         assert_eq!(got, Some((3, 12.0)));
         assert!(!bag.has(d.id()));
-        assert!(matches!(evs.last(), Some(StatusEvent::Detonated { stacks: 3, .. })));
+        assert!(matches!(
+            evs.last(),
+            Some(StatusEvent::Detonated { stacks: 3, .. })
+        ));
     }
 }

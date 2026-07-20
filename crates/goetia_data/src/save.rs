@@ -20,7 +20,10 @@ impl SaveFile {
     pub const CURRENT_VERSION: u32 = 1;
 
     pub fn new() -> Self {
-        SaveFile { version: Self::CURRENT_VERSION, sections: BTreeMap::new() }
+        SaveFile {
+            version: Self::CURRENT_VERSION,
+            sections: BTreeMap::new(),
+        }
     }
 
     /// Serialize any serde value into a named section.
@@ -31,7 +34,10 @@ impl SaveFile {
     }
 
     pub fn take<T: serde::de::DeserializeOwned>(&self, key: &str) -> SaveResult<T> {
-        let s = self.sections.get(key).ok_or_else(|| format!("missing section '{key}'"))?;
+        let s = self
+            .sections
+            .get(key)
+            .ok_or_else(|| format!("missing section '{key}'"))?;
         ron::from_str(s).map_err(|e| format!("section '{key}': {e}"))
     }
 
@@ -63,7 +69,11 @@ impl SaveFile {
         let text = std::fs::read_to_string(path).map_err(|e| format!("{}: {e}", path.display()))?;
         let sf: SaveFile = ron::from_str(&text).map_err(|e| e.to_string())?;
         if sf.version > Self::CURRENT_VERSION {
-            return Err(format!("save version {} is newer than engine {}", sf.version, Self::CURRENT_VERSION));
+            return Err(format!(
+                "save version {} is newer than engine {}",
+                sf.version,
+                Self::CURRENT_VERSION
+            ));
         }
         Ok(sf)
     }
@@ -84,11 +94,21 @@ mod tests {
         let dir = std::env::temp_dir().join("goetia_save_test");
         let p = dir.join("run.save.ron");
         let mut sf = SaveFile::new();
-        let bank = Bank { souls: 666, relics: vec!["ashen_idol".into()] };
+        let bank = Bank {
+            souls: 666,
+            relics: vec!["ashen_idol".into()],
+        };
         sf.put("bank", &bank).unwrap();
         sf.write(&p).unwrap();
         // Overwrite must also succeed (rename-over-existing path).
-        sf.put("bank", &Bank { souls: 667, relics: vec![] }).unwrap();
+        sf.put(
+            "bank",
+            &Bank {
+                souls: 667,
+                relics: vec![],
+            },
+        )
+        .unwrap();
         sf.write(&p).unwrap();
         let loaded = SaveFile::read(&p).unwrap();
         let got: Bank = loaded.take("bank").unwrap();

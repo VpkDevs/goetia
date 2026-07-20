@@ -9,7 +9,10 @@ pub struct Events<T> {
 
 impl<T> Default for Events<T> {
     fn default() -> Self {
-        Events { front: Vec::new(), back: Vec::new() }
+        Events {
+            front: Vec::new(),
+            back: Vec::new(),
+        }
     }
 }
 

@@ -11,19 +11,19 @@ use goetia::prelude::*;
 pub struct Meshes {
     pub ground: MeshHandle,
     pub slab: MeshHandle,
-    pub fiend: MeshHandle,   // spike silhouette
-    pub golem: MeshHandle,   // heavy stacked mass
+    pub fiend: MeshHandle, // spike silhouette
+    pub golem: MeshHandle, // heavy stacked mass
     pub orb: MeshHandle,
     pub wheel: MeshHandle,
     pub column: MeshHandle,
-    pub pillar: MeshHandle,  // environment
+    pub pillar: MeshHandle, // environment
     pub player: MeshHandle,
     pub portal: MeshHandle,
     pub shrine: MeshHandle,
     pub altar: MeshHandle,
-    pub seat: MeshHandle,    // court thrones
-    pub beam: MeshHandle,    // loot beam
-    pub disc: MeshHandle,    // zone disc
+    pub seat: MeshHandle, // court thrones
+    pub beam: MeshHandle, // loot beam
+    pub disc: MeshHandle, // zone disc
 }
 
 pub fn register_meshes(gfx: &mut Renderer) -> Meshes {
@@ -46,8 +46,15 @@ pub fn register_meshes(gfx: &mut Renderer) -> Meshes {
         ),
         golem: gfx.register_mesh(
             MeshBuilder::boxed(Vec3::new(-0.5, 0.0, -0.4), Vec3::new(0.5, 1.1, 0.4))
-                .merged(MeshBuilder::boxed(Vec3::new(-0.35, 1.1, -0.3), Vec3::new(0.35, 1.6, 0.3)))
-                .merged(MeshBuilder::cube().scaled(Vec3::splat(0.5)).translated(Vec3::new(0.0, 1.85, 0.0)))
+                .merged(MeshBuilder::boxed(
+                    Vec3::new(-0.35, 1.1, -0.3),
+                    Vec3::new(0.35, 1.6, 0.3),
+                ))
+                .merged(
+                    MeshBuilder::cube()
+                        .scaled(Vec3::splat(0.5))
+                        .translated(Vec3::new(0.0, 1.85, 0.0)),
+                )
                 .jittered(0.04),
         ),
         orb: gfx.register_mesh(MeshBuilder::orb(1, 0.5)),
@@ -57,7 +64,12 @@ pub fn register_meshes(gfx: &mut Renderer) -> Meshes {
                 .translated(Vec3::new(0.0, 0.8, 0.0)),
         ),
         column: gfx.register_mesh(MeshBuilder::column(1.8).tapered(0.7).jittered(0.03)),
-        pillar: gfx.register_mesh(MeshBuilder::column(3.4).twisted(0.08).tapered(0.55).jittered(0.03)),
+        pillar: gfx.register_mesh(
+            MeshBuilder::column(3.4)
+                .twisted(0.08)
+                .tapered(0.55)
+                .jittered(0.03),
+        ),
         player: gfx.register_mesh(
             MeshBuilder::spike(1.7)
                 .scaled(Vec3::new(0.7, 1.0, 0.7))
@@ -74,13 +86,20 @@ pub fn register_meshes(gfx: &mut Renderer) -> Meshes {
         ),
         altar: gfx.register_mesh(
             MeshBuilder::boxed(Vec3::new(-0.9, 0.0, -0.5), Vec3::new(0.9, 0.7, 0.5))
-                .merged(MeshBuilder::spike(1.0).scaled(Vec3::new(0.3, 1.0, 0.3)).translated(Vec3::new(0.0, 0.7, 0.0)))
+                .merged(
+                    MeshBuilder::spike(1.0)
+                        .scaled(Vec3::new(0.3, 1.0, 0.3))
+                        .translated(Vec3::new(0.0, 0.7, 0.0)),
+                )
                 .jittered(0.03),
         ),
         seat: gfx.register_mesh(
-            MeshBuilder::column(2.6).tapered(0.8).merged(
-                MeshBuilder::boxed(Vec3::new(-0.5, 0.0, -0.4), Vec3::new(0.5, 1.0, 0.4)),
-            ),
+            MeshBuilder::column(2.6)
+                .tapered(0.8)
+                .merged(MeshBuilder::boxed(
+                    Vec3::new(-0.5, 0.0, -0.4),
+                    Vec3::new(0.5, 1.0, 0.4),
+                )),
         ),
         beam: gfx.register_mesh(MeshBuilder::column(6.0).scaled(Vec3::new(0.16, 1.0, 0.16))),
         disc: gfx.register_mesh(MeshBuilder::prism(20, 1.0, 0.06)),
@@ -103,7 +122,9 @@ struct Batches {
 
 impl Batches {
     fn new() -> Self {
-        Batches { per_mesh: Vec::new() }
+        Batches {
+            per_mesh: Vec::new(),
+        }
     }
     fn push(&mut self, m: MeshHandle, i: InstanceRaw) {
         if let Some((_, v)) = self.per_mesh.iter_mut().find(|(h, _)| *h == m) {
@@ -142,7 +163,11 @@ pub fn draw_run(
     // Realm mood.
     frame.ambient = Vec3::new(0.10, 0.09, 0.13) * realm.ambient;
     if rs.demon == Demon::Buer {
-        let t = if gs.blight_phase { palette::ICHOR } else { palette::GOLD };
+        let t = if gs.blight_phase {
+            palette::ICHOR
+        } else {
+            palette::GOLD
+        };
         frame.fog = (t * 0.03).extend(0.022);
     } else {
         frame.fog = (sig * 0.04 + palette::VOID).extend(0.02);
@@ -160,7 +185,8 @@ pub fn draw_run(
         b.push(
             m.ground,
             InstanceRaw::new(
-                Mat4::from_translation(Vec3::new(cx, 0.0, cz)) * Mat4::from_scale(Vec3::new(w, 1.0, d)),
+                Mat4::from_translation(Vec3::new(cx, 0.0, cz))
+                    * Mat4::from_scale(Vec3::new(w, 1.0, d)),
                 (palette::ASH * 0.5 * shade + sig * 0.02).extend(1.0),
             ),
         );
@@ -168,7 +194,10 @@ pub fn draw_run(
             (room.x as f32 * CELL + 0.7, room.y as f32 * CELL + 0.7),
             (room.x as f32 * CELL + w - 0.7, room.y as f32 * CELL + 0.7),
             (room.x as f32 * CELL + 0.7, room.y as f32 * CELL + d - 0.7),
-            (room.x as f32 * CELL + w - 0.7, room.y as f32 * CELL + d - 0.7),
+            (
+                room.x as f32 * CELL + w - 0.7,
+                room.y as f32 * CELL + d - 0.7,
+            ),
         ] {
             b.push(
                 m.pillar,
@@ -197,28 +226,37 @@ pub fn draw_run(
     }
 
     // Entry + exit portals.
-    let portal_at = |at: Vec2, color: Vec3, strong: f32, b: &mut Batches, frame: &mut FrameSubmit| {
-        b.push(
-            m.portal,
-            InstanceRaw::new(Mat4::from_translation(Vec3::new(at.x, 0.0, at.y)), palette::VOID.extend(1.0))
+    let portal_at =
+        |at: Vec2, color: Vec3, strong: f32, b: &mut Batches, frame: &mut FrameSubmit| {
+            b.push(
+                m.portal,
+                InstanceRaw::new(
+                    Mat4::from_translation(Vec3::new(at.x, 0.0, at.y)),
+                    palette::VOID.extend(1.0),
+                )
                 .emissive(color, strong)
                 .wobble(0.06, 2.0)
                 .phase(at.x),
-        );
-        frame.lights.push(Light { pos: Vec3::new(at.x, 1.5, at.y), color, radius: 7.0, intensity: strong });
-        frame.particle_spawns.push(ParticleSpawn {
-            pos: Vec3::new(at.x, 0.3, at.y),
-            count: 2,
-            vel: Vec3::Y * 1.8,
-            spread: 0.7,
-            color_from: color.extend(0.8),
-            color_to: color.extend(0.0),
-            size: (0.04, 0.1),
-            life: (0.6, 1.6),
-            gravity: -0.3,
-            drag: 0.5,
-        });
-    };
+            );
+            frame.lights.push(Light {
+                pos: Vec3::new(at.x, 1.5, at.y),
+                color,
+                radius: 7.0,
+                intensity: strong,
+            });
+            frame.particle_spawns.push(ParticleSpawn {
+                pos: Vec3::new(at.x, 0.3, at.y),
+                count: 2,
+                vel: Vec3::Y * 1.8,
+                spread: 0.7,
+                color_from: color.extend(0.8),
+                color_to: color.extend(0.0),
+                size: (0.04, 0.1),
+                life: (0.6, 1.6),
+                gravity: -0.3,
+                drag: 0.5,
+            });
+        };
     portal_at(rs.entry, palette::BONE * 0.8, 1.2, &mut b, frame);
     if let Some(p) = rs.portal_out {
         portal_at(p, palette::GOLD, 2.2, &mut b, frame);
@@ -229,12 +267,20 @@ pub fn draw_run(
         let e = if *used { sig * 0.1 } else { palette::HEX * 1.6 };
         b.push(
             m.shrine,
-            InstanceRaw::new(Mat4::from_translation(Vec3::new(spos.x, 0.0, spos.y)), palette::VOID.extend(1.0))
-                .emissive(e, 1.0)
-                .wobble(0.03, 1.5),
+            InstanceRaw::new(
+                Mat4::from_translation(Vec3::new(spos.x, 0.0, spos.y)),
+                palette::VOID.extend(1.0),
+            )
+            .emissive(e, 1.0)
+            .wobble(0.03, 1.5),
         );
         if !*used && frame.lights.len() < 40 {
-            frame.lights.push(Light { pos: Vec3::new(spos.x, 2.0, spos.y), color: palette::HEX, radius: 6.0, intensity: 1.3 });
+            frame.lights.push(Light {
+                pos: Vec3::new(spos.x, 2.0, spos.y),
+                color: palette::HEX,
+                radius: 6.0,
+                intensity: 1.3,
+            });
         }
     }
     b.push(
@@ -300,7 +346,9 @@ fn draw_actors(
         d.boss = eng.world.has::<BossC>(d.e);
     }
     for d in list {
-        let Some(ip) = lerp_pos(eng, d.e, alpha) else { continue };
+        let Some(ip) = lerp_pos(eng, d.e, alpha) else {
+            continue;
+        };
         let bag = eng.world.get::<StatusBag>(d.e).cloned().unwrap_or_default();
         let hp_flash = eng.world.get::<Health>(d.e).map(|h| h.flash).unwrap_or(0.0);
         // Health flash decays render-side (sim only sets it).
@@ -309,7 +357,11 @@ fn draw_actors(
         }
 
         let petrified = bag.has(ST_PETRIFY);
-        let mut color = if petrified { palette::ASH * 2.2 } else { palette::BLOOD * 0.75 };
+        let mut color = if petrified {
+            palette::ASH * 2.2
+        } else {
+            palette::BLOOD * 0.75
+        };
         let mut emissive = Vec3::ZERO;
         // Telegraph = the loudest thing an enemy is allowed to be (Pillar 3).
         if d.state == AiState::Telegraph {
@@ -373,7 +425,11 @@ fn draw_actors(
         if iframes {
             em *= 2.2;
         }
-        let flash = eng.world.get::<Health>(gs.pc.entity).map(|h| h.flash).unwrap_or(0.0);
+        let flash = eng
+            .world
+            .get::<Health>(gs.pc.entity)
+            .map(|h| h.flash)
+            .unwrap_or(0.0);
         if let Some(h) = eng.world.get_mut::<Health>(gs.pc.entity) {
             h.flash = (h.flash - 0.1).max(0.0);
         }
@@ -388,7 +444,11 @@ fn draw_actors(
         );
         frame.lights.push(Light {
             pos: Vec3::new(ip.x, 2.0, ip.y),
-            color: if discorded { palette::BLOOD } else { palette::HEX },
+            color: if discorded {
+                palette::BLOOD
+            } else {
+                palette::HEX
+            },
             radius: 9.0,
             intensity: 1.6,
         });
@@ -396,8 +456,10 @@ fn draw_actors(
 
     // ---- minions & totems
     let mut servants: Vec<(Vec2, bool, f32)> = Vec::new();
-    eng.world.each::<(&Pos, &MinionC)>(|_, (p, mc)| servants.push((p.0, false, mc.life as f32)));
-    eng.world.each::<(&Pos, &TotemC)>(|_, (p, tc)| servants.push((p.0, true, tc.life as f32)));
+    eng.world
+        .each::<(&Pos, &MinionC)>(|_, (p, mc)| servants.push((p.0, false, mc.life as f32)));
+    eng.world
+        .each::<(&Pos, &TotemC)>(|_, (p, tc)| servants.push((p.0, true, tc.life as f32)));
     for (p, is_totem, life) in servants {
         let fade = (life / 60.0).min(1.0);
         b.push(
@@ -416,11 +478,18 @@ fn draw_actors(
     // ---- projectiles
     let mut proj_lights = 0;
     let mut projs: Vec<(Entity, bool, DmgVec, f32)> = Vec::new();
-    eng.world.each::<(&Proj,)>(|e, (pr,)| projs.push((e, pr.friendly, pr.dmg, pr.radius)));
+    eng.world
+        .each::<(&Proj,)>(|e, (pr,)| projs.push((e, pr.friendly, pr.dmg, pr.radius)));
     for (e, friendly, dmg, radius) in projs {
-        let Some(ip) = lerp_pos(eng, e, alpha) else { continue };
+        let Some(ip) = lerp_pos(eng, e, alpha) else {
+            continue;
+        };
         let c = dominant_type(&dmg).color();
-        let c = if friendly { c } else { c * 0.9 + palette::BLOOD * 0.4 };
+        let c = if friendly {
+            c
+        } else {
+            c * 0.9 + palette::BLOOD * 0.4
+        };
         let pos = Vec3::new(ip.x, 0.8, ip.y);
         b.push(
             m.orb,
@@ -432,9 +501,14 @@ fn draw_actors(
         );
         if proj_lights < 24 && frame.lights.len() < 58 {
             proj_lights += 1;
-            frame.lights.push(Light { pos, color: c, radius: 4.0, intensity: 1.0 });
+            frame.lights.push(Light {
+                pos,
+                color: c,
+                radius: 4.0,
+                intensity: 1.0,
+            });
         }
-        if eng.clock.tick % 3 == 0 {
+        if eng.clock.tick.is_multiple_of(3) {
             frame.particle_spawns.push(ParticleSpawn {
                 pos,
                 count: 1,
@@ -453,12 +527,22 @@ fn draw_actors(
     // ---- zones (telegraphs pulse blood-red: unmissable)
     let mut zones: Vec<(Vec2, f32, bool, bool, bool, f32)> = Vec::new();
     eng.world.each::<(&Pos, &Zone)>(|_, (p, z)| {
-        zones.push((p.0, z.radius, z.friendly, z.consecrate, z.telegraph_burst.is_some(), z.life as f32));
+        zones.push((
+            p.0,
+            z.radius,
+            z.friendly,
+            z.consecrate,
+            z.telegraph_burst.is_some(),
+            z.life as f32,
+        ));
     });
     for (p, radius, friendly, consecrate, telegraph, life) in zones {
         let (c, e) = if telegraph {
             let pulse = (time * 20.0).sin() * 0.5 + 0.5;
-            (palette::BLOOD, palette::BLOOD * (1.5 + pulse * 2.0) * (1.0 - life / 60.0).max(0.3))
+            (
+                palette::BLOOD,
+                palette::BLOOD * (1.5 + pulse * 2.0) * (1.0 - life / 60.0).max(0.3),
+            )
         } else if consecrate {
             (palette::GOLD * 0.6, palette::GOLD * 0.7)
         } else if friendly {
@@ -469,7 +553,8 @@ fn draw_actors(
         b.push(
             m.disc,
             InstanceRaw::new(
-                Mat4::from_translation(Vec3::new(p.x, 0.03, p.y)) * Mat4::from_scale(Vec3::new(radius, 1.0, radius)),
+                Mat4::from_translation(Vec3::new(p.x, 0.03, p.y))
+                    * Mat4::from_scale(Vec3::new(radius, 1.0, radius)),
                 c.extend(0.55),
             )
             .emissive(e, 1.0)
@@ -498,7 +583,12 @@ fn draw_actors(
             .phase(p.x * 7.0),
         );
         if big && frame.lights.len() < 62 {
-            frame.lights.push(Light { pos: Vec3::new(p.x, 1.5, p.y), color: c, radius: 4.5, intensity: 1.6 });
+            frame.lights.push(Light {
+                pos: Vec3::new(p.x, 1.5, p.y),
+                color: c,
+                radius: 4.5,
+                intensity: 1.6,
+            });
         }
     }
 
@@ -538,12 +628,18 @@ pub fn draw_court(
     // Floor dais.
     b.push(
         m.ground,
-        InstanceRaw::new(Mat4::from_scale(Vec3::new(70.0, 1.0, 70.0)), (palette::ASH * 0.35).extend(1.0)),
+        InstanceRaw::new(
+            Mat4::from_scale(Vec3::new(70.0, 1.0, 70.0)),
+            (palette::ASH * 0.35).extend(1.0),
+        ),
     );
     b.push(
         m.disc,
-        InstanceRaw::new(Mat4::from_scale(Vec3::new(8.0, 1.0, 8.0)), (palette::VOID * 3.0).extend(1.0))
-            .emissive(palette::HEX * 0.25, 1.0),
+        InstanceRaw::new(
+            Mat4::from_scale(Vec3::new(8.0, 1.0, 8.0)),
+            (palette::VOID * 3.0).extend(1.0),
+        )
+        .emissive(palette::HEX * 0.25, 1.0),
     );
 
     // 72 seats; three lit. The roadmap is furniture.
@@ -561,7 +657,11 @@ pub fn draw_court(
         let (color, emissive) = match lit {
             Some(d) => {
                 let selected = d.index() == sel_demon;
-                let pulse = if selected { (time * 4.0).sin() * 0.4 + 1.3 } else { 0.7 };
+                let pulse = if selected {
+                    (time * 4.0).sin() * 0.4 + 1.3
+                } else {
+                    0.7
+                };
                 (palette::VOID * 2.0, d.signature() * pulse)
             }
             None => (palette::VOID * 1.4, Vec3::ZERO),
@@ -569,7 +669,8 @@ pub fn draw_court(
         b.push(
             m.seat,
             InstanceRaw::new(
-                Mat4::from_translation(pos) * Mat4::from_rotation_y(-a + std::f32::consts::FRAC_PI_2),
+                Mat4::from_translation(pos)
+                    * Mat4::from_rotation_y(-a + std::f32::consts::FRAC_PI_2),
                 color.extend(1.0),
             )
             .emissive(emissive, 1.0)
@@ -592,10 +693,13 @@ pub fn draw_court(
         let selected = d.index() == sel_demon;
         b.push(
             m.portal,
-            InstanceRaw::new(Mat4::from_translation(Vec3::new(at.x, 0.0, at.y)), palette::VOID.extend(1.0))
-                .emissive(d.signature() * if selected { 2.4 } else { 0.8 }, 1.0)
-                .wobble(0.05, 2.0)
-                .phase(d.index() as f32 * 2.0),
+            InstanceRaw::new(
+                Mat4::from_translation(Vec3::new(at.x, 0.0, at.y)),
+                palette::VOID.extend(1.0),
+            )
+            .emissive(d.signature() * if selected { 2.4 } else { 0.8 }, 1.0)
+            .wobble(0.05, 2.0)
+            .phase(d.index() as f32 * 2.0),
         );
         if selected {
             frame.particle_spawns.push(ParticleSpawn {

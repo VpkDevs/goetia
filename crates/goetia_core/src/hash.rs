@@ -22,7 +22,11 @@ pub struct Fnv64Hasher(u64);
 
 impl Hasher for Fnv64Hasher {
     fn finish(&self) -> u64 {
-        if self.0 == 0 { FNV_OFFSET } else { self.0 }
+        if self.0 == 0 {
+            FNV_OFFSET
+        } else {
+            self.0
+        }
     }
     fn write(&mut self, bytes: &[u8]) {
         let mut h = if self.0 == 0 { FNV_OFFSET } else { self.0 };

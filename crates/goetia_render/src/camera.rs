@@ -90,7 +90,8 @@ impl CameraRig {
         let eye = self.eye();
         let view = Mat4::look_at_rh(eye, self.target, Vec3::Y);
         let roll = Mat4::from_rotation_z(self.shake_roll);
-        let shake = Mat4::from_translation(Vec3::new(self.shake_offset.x, self.shake_offset.y, 0.0));
+        let shake =
+            Mat4::from_translation(Vec3::new(self.shake_offset.x, self.shake_offset.y, 0.0));
         let proj = Mat4::orthographic_rh(-w, w, -h, h, 1.0, EYE_DIST * 2.5);
         proj * shake * roll * view
     }

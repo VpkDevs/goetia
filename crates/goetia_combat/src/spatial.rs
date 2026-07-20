@@ -25,12 +25,20 @@ pub struct SpatialGrid {
 impl SpatialGrid {
     /// `cell` should be ~2× the typical query radius.
     pub fn new(cell: f32) -> Self {
-        SpatialGrid { cell, inv_cell: 1.0 / cell, map: FnvHashMap::default(), count: 0 }
+        SpatialGrid {
+            cell,
+            inv_cell: 1.0 / cell,
+            map: FnvHashMap::default(),
+            count: 0,
+        }
     }
 
     #[inline]
     fn cell_of(&self, p: Vec2) -> (i32, i32) {
-        ((p.x * self.inv_cell).floor() as i32, (p.y * self.inv_cell).floor() as i32)
+        (
+            (p.x * self.inv_cell).floor() as i32,
+            (p.y * self.inv_cell).floor() as i32,
+        )
     }
 
     pub fn clear(&mut self) {
@@ -42,7 +50,12 @@ impl SpatialGrid {
 
     pub fn insert(&mut self, entity: Entity, pos: Vec2, radius: f32, mask: u32) {
         let c = self.cell_of(pos);
-        self.map.entry(c).or_default().push(Body { entity, pos, radius, mask });
+        self.map.entry(c).or_default().push(Body {
+            entity,
+            pos,
+            radius,
+            mask,
+        });
         self.count += 1;
     }
 
@@ -61,7 +74,13 @@ impl SpatialGrid {
 
     /// All bodies whose circle overlaps the query circle. `mask_filter` is
     /// ANDed against each body's mask; pass `u32::MAX` for everything.
-    pub fn query_radius(&self, pos: Vec2, radius: f32, mask_filter: u32, out: &mut Vec<(Entity, Vec2)>) {
+    pub fn query_radius(
+        &self,
+        pos: Vec2,
+        radius: f32,
+        mask_filter: u32,
+        out: &mut Vec<(Entity, Vec2)>,
+    ) {
         let r = Vec2::splat(radius);
         for c in self.cells_in_aabb(pos - r, pos + r) {
             if let Some(bodies) = self.map.get(&c) {
@@ -195,7 +214,9 @@ mod tests {
         assert_eq!(ent, e(2));
         assert!(t < 0.3);
         // miss: offset lane
-        assert!(g.sweep(Vec2::new(0.0, 5.0), Vec2::new(20.0, 5.0), 0.25, u32::MAX).is_none());
+        assert!(g
+            .sweep(Vec2::new(0.0, 5.0), Vec2::new(20.0, 5.0), 0.25, u32::MAX)
+            .is_none());
     }
 
     #[test]

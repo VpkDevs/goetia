@@ -105,9 +105,15 @@ struct OpenDoor {
 fn door_cells(t: &RoomTemplate, x: i32, y: i32, d: Door) -> ((i32, i32), (i32, i32)) {
     // (cell inside room at the door, cell just outside)
     match d.side {
-        Side::North => ((x + d.offset as i32, y + t.height as i32 - 1), (x + d.offset as i32, y + t.height as i32)),
+        Side::North => (
+            (x + d.offset as i32, y + t.height as i32 - 1),
+            (x + d.offset as i32, y + t.height as i32),
+        ),
         Side::South => ((x + d.offset as i32, y), (x + d.offset as i32, y - 1)),
-        Side::East => ((x + t.width as i32 - 1, y + d.offset as i32), (x + t.width as i32, y + d.offset as i32)),
+        Side::East => (
+            (x + t.width as i32 - 1, y + d.offset as i32),
+            (x + t.width as i32, y + d.offset as i32),
+        ),
         Side::West => ((x, y + d.offset as i32), (x - 1, y + d.offset as i32)),
     }
 }
@@ -117,9 +123,13 @@ fn tags_allowed(g: &RealmGrammar, a: &RoomTemplate, b: &RoomTemplate) -> bool {
         return true;
     }
     let pair_ok = |ta: &str, tb: &str| {
-        g.allow.iter().any(|(x, y)| (x == ta && y == tb) || (x == tb && y == ta))
+        g.allow
+            .iter()
+            .any(|(x, y)| (x == ta && y == tb) || (x == tb && y == ta))
     };
-    a.tags.iter().any(|ta| b.tags.iter().any(|tb| pair_ok(ta, tb)))
+    a.tags
+        .iter()
+        .any(|ta| b.tags.iter().any(|tb| pair_ok(ta, tb)))
         || (a.tags.is_empty() || b.tags.is_empty())
 }
 
@@ -151,7 +161,11 @@ pub fn assemble(
         layout.rooms.push(PlacedRoom { template: ti, x, y });
         for &d in &t.doors {
             let (_, exit) = door_cells(t, x, y, d);
-            open.push(OpenDoor { room: idx, door: d, exit_cell: exit });
+            open.push(OpenDoor {
+                room: idx,
+                door: d,
+                exit_cell: exit,
+            });
         }
         idx
     };
@@ -223,9 +237,7 @@ pub fn assemble(
         let new_idx = place(&mut layout, &mut occupied, &mut open, ti, nx, ny);
         // Remove the new room's door that we just used for the connection.
         open.retain(|o| {
-            !(o.room == new_idx
-                && o.door.side == tdoor.side
-                && o.door.offset == tdoor.offset)
+            !(o.room == new_idx && o.door.side == tdoor.side && o.door.offset == tdoor.offset)
         });
         layout.connections.push((host, new_idx, exit_cell));
     }
@@ -237,27 +249,74 @@ mod tests {
     use super::*;
 
     fn t(name: &str, w: u32, h: u32, doors: Vec<Door>) -> RoomTemplate {
-        RoomTemplate { name: name.into(), width: w, height: h, doors, tags: vec![], weight: 1.0 }
+        RoomTemplate {
+            name: name.into(),
+            width: w,
+            height: h,
+            doors,
+            tags: vec![],
+            weight: 1.0,
+        }
     }
 
     fn templates() -> Vec<RoomTemplate> {
         vec![
-            t("hub", 3, 3, vec![
-                Door { side: Side::North, offset: 1 },
-                Door { side: Side::South, offset: 1 },
-                Door { side: Side::East, offset: 1 },
-                Door { side: Side::West, offset: 1 },
-            ]),
-            t("hall", 2, 4, vec![
-                Door { side: Side::North, offset: 0 },
-                Door { side: Side::South, offset: 1 },
-            ]),
-            t("cell", 2, 2, vec![Door { side: Side::West, offset: 0 }]),
+            t(
+                "hub",
+                3,
+                3,
+                vec![
+                    Door {
+                        side: Side::North,
+                        offset: 1,
+                    },
+                    Door {
+                        side: Side::South,
+                        offset: 1,
+                    },
+                    Door {
+                        side: Side::East,
+                        offset: 1,
+                    },
+                    Door {
+                        side: Side::West,
+                        offset: 1,
+                    },
+                ],
+            ),
+            t(
+                "hall",
+                2,
+                4,
+                vec![
+                    Door {
+                        side: Side::North,
+                        offset: 0,
+                    },
+                    Door {
+                        side: Side::South,
+                        offset: 1,
+                    },
+                ],
+            ),
+            t(
+                "cell",
+                2,
+                2,
+                vec![Door {
+                    side: Side::West,
+                    offset: 0,
+                }],
+            ),
         ]
     }
 
     fn grammar(n: u32) -> RealmGrammar {
-        RealmGrammar { start: "hub".into(), target_rooms: n, allow: vec![] }
+        RealmGrammar {
+            start: "hub".into(),
+            target_rooms: n,
+            allow: vec![],
+        }
     }
 
     #[test]

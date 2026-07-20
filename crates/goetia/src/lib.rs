@@ -18,7 +18,9 @@ pub use goetia_combat::{
     spatial::SpatialGrid,
     stats::{ModOp, ModifierHandle, StatKey, StatSheet},
     status::{ActiveStatus, StatusBag, StatusDef, StatusEvent, StatusId, StatusRegistry},
-    triggers::{TriggerBus, TriggerConfig, TriggerEmitter, TriggerEvent, TriggerKind, TriggerStats},
+    triggers::{
+        TriggerBus, TriggerConfig, TriggerEmitter, TriggerEvent, TriggerKind, TriggerStats,
+    },
 };
 pub use goetia_core::{
     ecs::Bundle, hash::fnv1a64, time::FIXED_DT, time::TICK_RATE, CommandBuffer, Entity, Events,

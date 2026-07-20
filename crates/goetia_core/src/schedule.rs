@@ -20,11 +20,23 @@ pub struct SystemDef {
 
 impl SystemDef {
     pub fn exclusive(name: &'static str, run: impl Fn(&mut World) + Send + Sync + 'static) -> Self {
-        SystemDef { name, reads: vec![], writes: vec![], exclusive: true, run: Box::new(run) }
+        SystemDef {
+            name,
+            reads: vec![],
+            writes: vec![],
+            exclusive: true,
+            run: Box::new(run),
+        }
     }
 
     pub fn new(name: &'static str, run: impl Fn(&mut World) + Send + Sync + 'static) -> Self {
-        SystemDef { name, reads: vec![], writes: vec![], exclusive: false, run: Box::new(run) }
+        SystemDef {
+            name,
+            reads: vec![],
+            writes: vec![],
+            exclusive: false,
+            run: Box::new(run),
+        }
     }
 
     pub fn reads<T: 'static>(mut self) -> Self {
@@ -41,7 +53,10 @@ fn conflicts(a: &SystemDef, b: &SystemDef) -> bool {
     if a.exclusive || b.exclusive {
         return true;
     }
-    let w_r = a.writes.iter().any(|t| b.reads.contains(t) || b.writes.contains(t));
+    let w_r = a
+        .writes
+        .iter()
+        .any(|t| b.reads.contains(t) || b.writes.contains(t));
     let r_w = b.writes.iter().any(|t| a.reads.contains(t));
     w_r || r_w
 }
@@ -75,7 +90,9 @@ impl Schedule {
         self.batches.clear();
         let mut current: Vec<usize> = Vec::new();
         for i in 0..self.systems.len() {
-            let ok = !current.iter().any(|&j| conflicts(&self.systems[j], &self.systems[i]));
+            let ok = !current
+                .iter()
+                .any(|&j| conflicts(&self.systems[j], &self.systems[i]));
             if ok && !self.systems[i].exclusive {
                 current.push(i);
             } else {
@@ -109,8 +126,10 @@ impl Schedule {
                 let wp = WorldPtr(world as *mut World);
                 let wp_ref = &wp;
                 let systems = &self.systems;
-                let timings: Vec<std::sync::atomic::AtomicU32> =
-                    batch.iter().map(|_| std::sync::atomic::AtomicU32::new(0)).collect();
+                let timings: Vec<std::sync::atomic::AtomicU32> = batch
+                    .iter()
+                    .map(|_| std::sync::atomic::AtomicU32::new(0))
+                    .collect();
                 let jobs: Vec<Box<dyn FnOnce() + Send + '_>> = batch
                     .iter()
                     .enumerate()
@@ -123,7 +142,10 @@ impl Schedule {
                             // &mut World access never aliases component data.
                             let w = unsafe { &mut *wp_ref.0 };
                             (systems[i].run)(w);
-                            tk.store(t.elapsed().as_micros() as u32, std::sync::atomic::Ordering::Relaxed);
+                            tk.store(
+                                t.elapsed().as_micros() as u32,
+                                std::sync::atomic::Ordering::Relaxed,
+                            );
                         }) as Box<dyn FnOnce() + Send + '_>
                     })
                     .collect();
@@ -158,8 +180,12 @@ mod tests {
         }
         let pool = JobPool::new(2);
         let mut sched = Schedule::new();
-        sched.add(SystemDef::new("bump_a", |w| w.each::<(&mut A,)>(|_, (a,)| a.0 += 1)).writes::<A>());
-        sched.add(SystemDef::new("bump_b", |w| w.each::<(&mut B,)>(|_, (b,)| b.0 += 2)).writes::<B>());
+        sched.add(
+            SystemDef::new("bump_a", |w| w.each::<(&mut A,)>(|_, (a,)| a.0 += 1)).writes::<A>(),
+        );
+        sched.add(
+            SystemDef::new("bump_b", |w| w.each::<(&mut B,)>(|_, (b,)| b.0 += 2)).writes::<B>(),
+        );
         sched.add(
             SystemDef::new("sum", |w| {
                 let mut s = 0;

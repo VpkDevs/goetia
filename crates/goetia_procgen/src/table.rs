@@ -24,11 +24,18 @@ pub struct WeightedTable<T> {
 
 impl<T> WeightedTable<T> {
     pub fn new() -> Self {
-        WeightedTable { entries: Vec::new() }
+        WeightedTable {
+            entries: Vec::new(),
+        }
     }
 
     pub fn push(&mut self, item: T, weight: f32, pity_ramp: f32) -> &mut Self {
-        self.entries.push(TableEntry { item, weight, pity_ramp, misses: 0 });
+        self.entries.push(TableEntry {
+            item,
+            weight,
+            pity_ramp,
+            misses: 0,
+        });
         self
     }
 

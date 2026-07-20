@@ -26,14 +26,18 @@ pub struct DataRegistry<T> {
 
 impl<T: serde::de::DeserializeOwned> DataRegistry<T> {
     pub fn new() -> Self {
-        DataRegistry { entries: Vec::new(), version: 0, hot_reload: cfg!(debug_assertions) }
+        DataRegistry {
+            entries: Vec::new(),
+            version: 0,
+            hot_reload: cfg!(debug_assertions),
+        }
     }
 
     /// Load a RON file. Returns a stable handle.
     pub fn load(&mut self, path: impl AsRef<Path>) -> Result<DataHandle, String> {
         let path = path.as_ref().to_path_buf();
-        let text = std::fs::read_to_string(&path)
-            .map_err(|e| format!("{}: {e}", path.display()))?;
+        let text =
+            std::fs::read_to_string(&path).map_err(|e| format!("{}: {e}", path.display()))?;
         let value: T = ron::from_str(&text).map_err(|e| format!("{}: {e}", path.display()))?;
         let mtime = std::fs::metadata(&path).and_then(|m| m.modified()).ok();
         self.entries.push(Entry { path, mtime, value });
@@ -43,7 +47,11 @@ impl<T: serde::de::DeserializeOwned> DataRegistry<T> {
 
     /// Register an in-memory value (tests, embedded defaults).
     pub fn insert(&mut self, value: T) -> DataHandle {
-        self.entries.push(Entry { path: PathBuf::new(), mtime: None, value });
+        self.entries.push(Entry {
+            path: PathBuf::new(),
+            mtime: None,
+            value,
+        });
         self.version += 1;
         DataHandle(self.entries.len() - 1)
     }

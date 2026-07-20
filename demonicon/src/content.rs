@@ -31,23 +31,47 @@ pub struct Reaction {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum Action {
     /// Explosion at the trigger target, pct of player weapon damage.
-    Nova { pct: f32, dtype: DmgType, radius: f32 },
+    Nova {
+        pct: f32,
+        dtype: DmgType,
+        radius: f32,
+    },
     /// Apply a status at the trigger target (or around it).
-    ApplyStatus { status: String, stacks: u32, magnitude: f32, radius: f32 },
+    ApplyStatus {
+        status: String,
+        stacks: u32,
+        magnitude: f32,
+        radius: f32,
+    },
     /// Recast the player's last skill at pct power (echoes count as casts —
     /// yes, that loops; the trigger budget is the only referee).
-    Echo { pct: f32 },
+    Echo {
+        pct: f32,
+    },
     /// Reset the last-cast skill's cooldown.
     FreeReset,
-    Heal { pct_max: f32 },
+    Heal {
+        pct_max: f32,
+    },
     /// Copy the named status from the trigger target to enemies in radius.
-    SpreadStatus { status: String, radius: f32 },
+    SpreadStatus {
+        status: String,
+        radius: f32,
+    },
     /// Detonate the named status on the trigger target.
-    Detonate { status: String },
+    Detonate {
+        status: String,
+    },
     /// Temporary frenzy buff.
-    Frenzy { ticks: u32, cast_speed: f32, move_speed: f32 },
+    Frenzy {
+        ticks: u32,
+        cast_speed: f32,
+        move_speed: f32,
+    },
     /// Extra crafting dust.
-    Dust { amount: u32 },
+    Dust {
+        amount: u32,
+    },
 }
 
 // ------------------------------------------------------------------ skills
@@ -63,14 +87,45 @@ pub struct StatusApply {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum SkillKind {
-    Projectile { speed: f32, radius: f32, count: u32, spread_deg: f32, pierce: u32, life_ticks: u32 },
-    Nova { radius: f32 },
-    Ground { radius: f32, duration_ticks: u32, tick_interval: u32, consecrate: bool },
-    Minion { count: u32, life_ticks: u32, attack_cd: u32, speed: f32 },
-    Beam { range: f32, width: f32, tick_interval: u32 },
-    Dash { dist: f32 },
-    Curse { radius: f32 },
-    Totem { duration_ticks: u32, fire_cd: u32, proj_speed: f32 },
+    Projectile {
+        speed: f32,
+        radius: f32,
+        count: u32,
+        spread_deg: f32,
+        pierce: u32,
+        life_ticks: u32,
+    },
+    Nova {
+        radius: f32,
+    },
+    Ground {
+        radius: f32,
+        duration_ticks: u32,
+        tick_interval: u32,
+        consecrate: bool,
+    },
+    Minion {
+        count: u32,
+        life_ticks: u32,
+        attack_cd: u32,
+        speed: f32,
+    },
+    Beam {
+        range: f32,
+        width: f32,
+        tick_interval: u32,
+    },
+    Dash {
+        dist: f32,
+    },
+    Curse {
+        radius: f32,
+    },
+    Totem {
+        duration_ticks: u32,
+        fire_cd: u32,
+        proj_speed: f32,
+    },
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -168,7 +223,9 @@ pub enum Rule {
     AllHiddenActive,
     /// Andras: you can be Discorded; while Discorded, +power but procs may
     /// pick YOU as a target.
-    PlayerDiscordable { power: f32 },
+    PlayerDiscordable {
+        power: f32,
+    },
     ProcsTargetSelf,
     /// Buer: the Cycle is locked to blight.
     LockBlight,
@@ -237,21 +294,28 @@ pub struct GoeticDef {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum EnemyAiKind {
     Melee,
-    Ranged { range: f32, proj_speed: f32 },
+    Ranged {
+        range: f32,
+        proj_speed: f32,
+    },
     Charger,
     /// Heals nearby allies per second (Buer clergy, bloom tenders).
-    Support { heal: f32 },
+    Support {
+        heal: f32,
+    },
     /// Buer spore wheel / BUER himself: orbits the arena.
-    Wheel { orbit_radius: f32 },
+    Wheel {
+        orbit_radius: f32,
+    },
 }
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq)]
 pub enum EnemyShape {
-    Spike,   // wraiths, hounds
-    Golem,   // slabs and ledgers
-    Orb,     // floating indexes
-    Wheel,   // spore wheels
-    Column,  // clergy
+    Spike,  // wraiths, hounds
+    Golem,  // slabs and ledgers
+    Orb,    // floating indexes
+    Wheel,  // spore wheels
+    Column, // clergy
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -369,7 +433,8 @@ pub fn data_path(rel: &str) -> String {
 }
 
 fn load<T: serde::de::DeserializeOwned>(reg: &mut DataRegistry<T>, rel: &str) -> DataHandle {
-    reg.load(data_path(rel)).unwrap_or_else(|e| panic!("content load failed: {e}"))
+    reg.load(data_path(rel))
+        .unwrap_or_else(|e| panic!("content load failed: {e}"))
 }
 
 impl ContentDb {
@@ -384,8 +449,16 @@ impl ContentDb {
         let mut realm_mods = DataRegistry::new();
         let mut statuses = DataRegistry::new();
         let mut naming = DataRegistry::new();
-        let mut rooms = [DataRegistry::new(), DataRegistry::new(), DataRegistry::new()];
-        let mut grammars = [DataRegistry::new(), DataRegistry::new(), DataRegistry::new()];
+        let mut rooms = [
+            DataRegistry::new(),
+            DataRegistry::new(),
+            DataRegistry::new(),
+        ];
+        let mut grammars = [
+            DataRegistry::new(),
+            DataRegistry::new(),
+            DataRegistry::new(),
+        ];
 
         let handles = Handles {
             skills: load(&mut skills, "skills.ron"),
@@ -501,25 +574,46 @@ impl ContentDb {
     }
 
     pub fn skill(&self, id: &str) -> &SkillDef {
-        self.skills().iter().find(|s| s.id == id).unwrap_or_else(|| panic!("skill {id}"))
+        self.skills()
+            .iter()
+            .find(|s| s.id == id)
+            .unwrap_or_else(|| panic!("skill {id}"))
     }
     pub fn sigil(&self, id: &str) -> &SigilDef {
-        self.sigils().iter().find(|s| s.id == id).unwrap_or_else(|| panic!("sigil {id}"))
+        self.sigils()
+            .iter()
+            .find(|s| s.id == id)
+            .unwrap_or_else(|| panic!("sigil {id}"))
     }
     pub fn affix(&self, id: &str) -> &AffixDef {
-        self.affixes().iter().find(|s| s.id == id).unwrap_or_else(|| panic!("affix {id}"))
+        self.affixes()
+            .iter()
+            .find(|s| s.id == id)
+            .unwrap_or_else(|| panic!("affix {id}"))
     }
     pub fn contract(&self, id: &str) -> &ContractDef {
-        self.contracts().iter().find(|s| s.id == id).unwrap_or_else(|| panic!("contract {id}"))
+        self.contracts()
+            .iter()
+            .find(|s| s.id == id)
+            .unwrap_or_else(|| panic!("contract {id}"))
     }
     pub fn goetic(&self, id: &str) -> &GoeticDef {
-        self.goetics().iter().find(|s| s.id == id).unwrap_or_else(|| panic!("goetic {id}"))
+        self.goetics()
+            .iter()
+            .find(|s| s.id == id)
+            .unwrap_or_else(|| panic!("goetic {id}"))
     }
     pub fn enemy(&self, id: &str) -> &EnemyDef {
-        self.enemies().iter().find(|s| s.id == id).unwrap_or_else(|| panic!("enemy {id}"))
+        self.enemies()
+            .iter()
+            .find(|s| s.id == id)
+            .unwrap_or_else(|| panic!("enemy {id}"))
     }
     pub fn realm(&self, demon: Demon) -> &RealmDef {
-        self.realms().iter().find(|r| r.demon == demon).expect("realm def")
+        self.realms()
+            .iter()
+            .find(|r| r.demon == demon)
+            .expect("realm def")
     }
 }
 

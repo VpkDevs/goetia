@@ -44,7 +44,11 @@ impl MeshStore {
             contents: bytemuck::cast_slice(&b.indices),
             usage: wgpu::BufferUsages::INDEX,
         });
-        self.meshes.push(GpuMesh { vertices, indices, index_count: b.indices.len() as u32 });
+        self.meshes.push(GpuMesh {
+            vertices,
+            indices,
+            index_count: b.indices.len() as u32,
+        });
         MeshHandle(self.meshes.len() - 1)
     }
 
@@ -113,8 +117,14 @@ impl MeshBuilder {
         let (yp, yn) = (Vec3::Y, -Vec3::Y);
         let (zp, zn) = (Vec3::Z, -Vec3::Z);
         for &[a, b, c] in &[
-            [yp, zp, xp], [yp, xp, zn], [yp, zn, xn], [yp, xn, zp],
-            [yn, xp, zp], [yn, zn, xp], [yn, xn, zn], [yn, zp, xn],
+            [yp, zp, xp],
+            [yp, xp, zn],
+            [yp, zn, xn],
+            [yp, xn, zp],
+            [yn, xp, zp],
+            [yn, zn, xp],
+            [yn, xn, zn],
+            [yn, zp, xn],
         ] {
             tris.push([a, b, c]);
         }
@@ -183,7 +193,9 @@ impl MeshBuilder {
         let nm = m.inverse().transpose();
         for v in &mut self.vertices {
             let p = m.transform_point3(Vec3::from(v.pos));
-            let n = nm.transform_vector3(Vec3::from(v.normal)).normalize_or_zero();
+            let n = nm
+                .transform_vector3(Vec3::from(v.normal))
+                .normalize_or_zero();
             v.pos = p.to_array();
             v.normal = n.to_array();
         }
@@ -274,7 +286,10 @@ impl MeshBuilder {
         let n = (b - a).cross(c - a).normalize_or_zero().to_array();
         let base = self.vertices.len() as u32;
         for p in [a, b, c] {
-            self.vertices.push(Vertex { pos: p.to_array(), normal: n });
+            self.vertices.push(Vertex {
+                pos: p.to_array(),
+                normal: n,
+            });
         }
         self.indices.extend([base, base + 1, base + 2]);
     }
@@ -288,12 +303,42 @@ impl MeshBuilder {
         let (a, b) = (min, max);
         let p = |x: f32, y: f32, z: f32| Vec3::new(x, y, z);
         // -X, +X, -Y, +Y, -Z, +Z faces, CCW seen from outside.
-        self.push_quad(p(a.x, a.y, a.z), p(a.x, a.y, b.z), p(a.x, b.y, b.z), p(a.x, b.y, a.z));
-        self.push_quad(p(b.x, a.y, b.z), p(b.x, a.y, a.z), p(b.x, b.y, a.z), p(b.x, b.y, b.z));
-        self.push_quad(p(a.x, a.y, a.z), p(b.x, a.y, a.z), p(b.x, a.y, b.z), p(a.x, a.y, b.z));
-        self.push_quad(p(a.x, b.y, b.z), p(b.x, b.y, b.z), p(b.x, b.y, a.z), p(a.x, b.y, a.z));
-        self.push_quad(p(b.x, a.y, a.z), p(a.x, a.y, a.z), p(a.x, b.y, a.z), p(b.x, b.y, a.z));
-        self.push_quad(p(a.x, a.y, b.z), p(b.x, a.y, b.z), p(b.x, b.y, b.z), p(a.x, b.y, b.z));
+        self.push_quad(
+            p(a.x, a.y, a.z),
+            p(a.x, a.y, b.z),
+            p(a.x, b.y, b.z),
+            p(a.x, b.y, a.z),
+        );
+        self.push_quad(
+            p(b.x, a.y, b.z),
+            p(b.x, a.y, a.z),
+            p(b.x, b.y, a.z),
+            p(b.x, b.y, b.z),
+        );
+        self.push_quad(
+            p(a.x, a.y, a.z),
+            p(b.x, a.y, a.z),
+            p(b.x, a.y, b.z),
+            p(a.x, a.y, b.z),
+        );
+        self.push_quad(
+            p(a.x, b.y, b.z),
+            p(b.x, b.y, b.z),
+            p(b.x, b.y, a.z),
+            p(a.x, b.y, a.z),
+        );
+        self.push_quad(
+            p(b.x, a.y, a.z),
+            p(a.x, a.y, a.z),
+            p(a.x, b.y, a.z),
+            p(b.x, b.y, a.z),
+        );
+        self.push_quad(
+            p(a.x, a.y, b.z),
+            p(b.x, a.y, b.z),
+            p(b.x, b.y, b.z),
+            p(a.x, b.y, b.z),
+        );
     }
 }
 
@@ -312,13 +357,19 @@ mod tests {
             let cc = Vec3::from(c.vertices[tri[2] as usize].pos);
             let center = (a + b + cc) / 3.0;
             let n = Vec3::from(c.vertices[tri[0] as usize].normal);
-            assert!(n.dot(center) > 0.0, "inward-facing normal {n:?} at {center:?}");
+            assert!(
+                n.dot(center) > 0.0,
+                "inward-facing normal {n:?} at {center:?}"
+            );
         }
     }
 
     #[test]
     fn authoring_chain_compiles_and_deforms() {
-        let m = MeshBuilder::column(3.0).twisted(0.1).tapered(0.5).jittered(0.02);
+        let m = MeshBuilder::column(3.0)
+            .twisted(0.1)
+            .tapered(0.5)
+            .jittered(0.02);
         assert!(!m.vertices.is_empty());
         let (lo, hi) = m.y_range();
         assert!(lo > -0.2 && hi > 2.5);

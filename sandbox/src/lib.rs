@@ -127,10 +127,22 @@ mod tests {
                 width: 3,
                 height: 3,
                 doors: vec![
-                    Door { side: Side::North, offset: 1 },
-                    Door { side: Side::South, offset: 1 },
-                    Door { side: Side::East, offset: 1 },
-                    Door { side: Side::West, offset: 1 },
+                    Door {
+                        side: Side::North,
+                        offset: 1,
+                    },
+                    Door {
+                        side: Side::South,
+                        offset: 1,
+                    },
+                    Door {
+                        side: Side::East,
+                        offset: 1,
+                    },
+                    Door {
+                        side: Side::West,
+                        offset: 1,
+                    },
                 ],
                 tags: vec![],
                 weight: 1.0,
@@ -140,8 +152,14 @@ mod tests {
                 width: 2,
                 height: 4,
                 doors: vec![
-                    Door { side: Side::North, offset: 0 },
-                    Door { side: Side::South, offset: 1 },
+                    Door {
+                        side: Side::North,
+                        offset: 0,
+                    },
+                    Door {
+                        side: Side::South,
+                        offset: 1,
+                    },
                 ],
                 tags: vec![],
                 weight: 1.2,
@@ -150,7 +168,10 @@ mod tests {
                 name: "cell".into(),
                 width: 2,
                 height: 2,
-                doors: vec![Door { side: Side::West, offset: 0 }],
+                doors: vec![Door {
+                    side: Side::West,
+                    offset: 0,
+                }],
                 tags: vec![],
                 weight: 1.0,
             },
@@ -159,8 +180,14 @@ mod tests {
                 width: 4,
                 height: 2,
                 doors: vec![
-                    Door { side: Side::East, offset: 0 },
-                    Door { side: Side::West, offset: 1 },
+                    Door {
+                        side: Side::East,
+                        offset: 0,
+                    },
+                    Door {
+                        side: Side::West,
+                        offset: 1,
+                    },
                 ],
                 tags: vec![],
                 weight: 1.0,
@@ -170,8 +197,14 @@ mod tests {
                 width: 3,
                 height: 3,
                 doors: vec![
-                    Door { side: Side::North, offset: 1 },
-                    Door { side: Side::West, offset: 1 },
+                    Door {
+                        side: Side::North,
+                        offset: 1,
+                    },
+                    Door {
+                        side: Side::West,
+                        offset: 1,
+                    },
                 ],
                 tags: vec![],
                 weight: 0.9,
@@ -180,7 +213,10 @@ mod tests {
                 name: "nook".into(),
                 width: 2,
                 height: 2,
-                doors: vec![Door { side: Side::South, offset: 0 }],
+                doors: vec![Door {
+                    side: Side::South,
+                    offset: 0,
+                }],
                 tags: vec![],
                 weight: 0.8,
             },

@@ -1,0 +1,26 @@
+version: 2
+updates:
+  # Rust deps. Grouped so a routine bump is one PR, not fifteen.
+  - package-ecosystem: cargo
+    directory: "/"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      patch-and-minor:
+        update-types: [minor, patch]
+    ignore:
+      # wgpu/winit majors are breaking API changes that need a deliberate port,
+      # not an automated PR. Bump these by hand.
+      - dependency-name: wgpu
+        update-types: [version-update:semver-major]
+      - dependency-name: winit
+        update-types: [version-update:semver-major]
+
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: monthly
+    groups:
+      actions:
+        patterns: ["*"]

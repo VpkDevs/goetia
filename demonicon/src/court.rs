@@ -13,7 +13,10 @@ pub struct CourtState {
 
 impl Default for CourtState {
     fn default() -> Self {
-        CourtState { sel_demon: 0, tier: 1 }
+        CourtState {
+            sel_demon: 0,
+            tier: 1,
+        }
     }
 }
 
@@ -44,7 +47,11 @@ pub fn tick_court(eng: &mut Engine, gs: &mut Gs, cs: &mut CourtState) -> Option<
     let input = crate::run::read_input(eng);
     let speed = 8.0;
     let (from, to) = {
-        let p = eng.world.get::<Pos>(gs.pc.entity).map(|p| p.0).unwrap_or(Vec2::ZERO);
+        let p = eng
+            .world
+            .get::<Pos>(gs.pc.entity)
+            .map(|p| p.0)
+            .unwrap_or(Vec2::ZERO);
         (p, p + input.mv * speed * FIXED_DT)
     };
     let to = if to.length() < 32.0 { to } else { from };
@@ -63,10 +70,15 @@ pub fn tick_court(eng: &mut Engine, gs: &mut Gs, cs: &mut CourtState) -> Option<
     eng.camera.target = eng.camera.target.lerp(t, 0.08);
 
     // Selection.
-    for (k, i) in [(KeyCode::Digit1, 0usize), (KeyCode::Digit2, 1), (KeyCode::Digit3, 2)] {
+    for (k, i) in [
+        (KeyCode::Digit1, 0usize),
+        (KeyCode::Digit2, 1),
+        (KeyCode::Digit3, 2),
+    ] {
         if eng.input.key_pressed(k) {
             cs.sel_demon = i;
-            eng.audio.play(&gs.sounds.ui, "sfx", 0.4, 1.0 + i as f32 * 0.15);
+            eng.audio
+                .play(&gs.sounds.ui, "sfx", 0.4, 1.0 + i as f32 * 0.15);
         }
     }
     if eng.input.key_pressed(KeyCode::Equal) || eng.input.key_pressed(KeyCode::NumpadAdd) {
