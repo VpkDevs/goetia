@@ -85,7 +85,15 @@ It runs fmt + clippy(`-D warnings`) + the full test suite before every push.
 `.gitattributes`; formatting is `rustfmt.toml` (max_width 100).
 
 **CI**: `.github/workflows/ci.yml` — fmt · clippy(-D warnings)+tests (Linux) ·
-tests (Windows) · determinism-as-its-own-signal. The repo went public on
-2026-07-20 partly because Actions was blocked for private repos at the account
-level (every workflow, even hello-world, hit `startup_failure`); public repos
-get unlimited free minutes. The pre-push hook remains the local backstop.
+tests (Windows) · determinism-as-its-own-signal. All four gates are verified
+green locally.
+
+**⚠️ CI is still blocked — the GitHub account itself is billing-locked.**
+Going public (2026-07-21) fixed the `startup_failure`s (jobs now launch), but
+every job then dies with GitHub's message: "The job was not started because
+your account is locked due to a billing issue." The fix is human-only:
+github.com/settings/billing on the VpkDevs account (unpaid balance / expired
+card). Until then the pre-push hook is the enforcement point. Once unlocked,
+re-run CI (`gh run rerun --failed <id>` or push), then add required status
+checks to the existing main branch protection (currently: no force-push, no
+deletion).
