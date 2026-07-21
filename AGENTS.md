@@ -67,7 +67,7 @@ failures plainly.
 
 ## Version control & repo health
 
-`DEV/goetia` is a git repo; remote is `VpkDevs/goetia` (private). `DEV` itself is
+`DEV/goetia` is a git repo; remote is `VpkDevs/goetia` (public, MIT OR Apache-2.0). `DEV` itself is
 a ~400-repo workspace and is deliberately NOT a repo — never `git init` at `DEV`
 or the profile root. Confirm `git rev-parse --show-toplevel` prints
 `.../DEV/goetia` before committing.
@@ -84,9 +84,8 @@ It runs fmt + clippy(`-D warnings`) + the full test suite before every push.
 · `cargo test --workspace` (39 tests). Line endings are normalized to LF by
 `.gitattributes`; formatting is `rustfmt.toml` (max_width 100).
 
-**⚠️ GitHub Actions is currently blocked at the account level.** Every workflow —
-including a 9-line hello-world and Dependabot's own managed run — fails with
-`startup_failure` in ~1s. This is NOT a workflow-file bug (`.github/workflows/ci.yml`
-is valid and all four of its gates pass locally). Private repos consume Actions
-minutes; the fix is on the billing/quota side, or make the repo public for
-unlimited free minutes. Until then the pre-push hook is the enforcement point.
+**CI**: `.github/workflows/ci.yml` — fmt · clippy(-D warnings)+tests (Linux) ·
+tests (Windows) · determinism-as-its-own-signal. The repo went public on
+2026-07-20 partly because Actions was blocked for private repos at the account
+level (every workflow, even hello-world, hit `startup_failure`); public repos
+get unlimited free minutes. The pre-push hook remains the local backstop.
